@@ -1,0 +1,63 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(FactoMineR)
+library(missMDA)
+```
+
+```{r}
+plants <- read_rds(here::here("try_diaz_traits_sp_mean.Rds"))
+names(plants) <- c("species", "LA", "LMA", "N", "phot_path", "H", "SM", "SSD")
+pca_p <- select(plants,-species, -"phot_path")
+```
+
+
+
+```{r}
+#tried to replace NaN with NAs but seem it doesn't really matter
+is.nan.data.frame <- function(x)
+  do.call(cbind, lapply(x, is.nan))
+
+plants[is.nan(plants)] <- NA 
+```
+
+
+```{r}
+colSums(is.na(plants)) %>% as.data.frame() %>% transmute(perc_na = ./nrow(plants) * 100)
+```
+
+
+```{r}
+count_na / nrow(plants)
+```
+
+
+```{r}
+nb <- estim_ncpPCA(pca_p, ncp.max=5) #this takes ages :(
+res.comp <- imputePCA(pca_p, ncp=2)
+res.pcs <- PCA(res.comp$completeObs)
+```
+
+```{r}
+plot(res.pcs)
+```
+
+
+```{r}
+res.pcs <- PCA(res.comp$completeObs)
+```
+
+
+```{r}
+pca1 <- PCA(pca_p)
+```
+
+
+
+
+
+
