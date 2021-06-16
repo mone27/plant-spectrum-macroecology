@@ -10,34 +10,46 @@ library(missMDA)
 ```
 
 ```{r}
-plants <- read_rds(here::here("try_diaz_traits_sp_mean.Rds"))
-names(plants) <- c("species", "LA", "LMA", "N", "phot_path", "H", "SM", "SSD")
-pca_p <- select(plants,-species, -"phot_path")
-```
+plants_all <- read_rds(here::here("try_diaz_traits_sp_mean.Rds"))
 
+names(plants_all) <- c("species", "LA", "LMA", "N", "phot_path", "H", "SM", "SSD")
 
-
-```{r}
-#tried to replace NaN with NAs but seem it doesn't really matter
+#replaces NaN with NAs for consistency later
 is.nan.data.frame <- function(x)
   do.call(cbind, lapply(x, is.nan))
 
-plants[is.nan(plants)] <- NA 
+plants_all[is.nan(plants_all)] <- NA
+
+# removes NA values
+plants <- drop_na(plants_all)
+plants_pca <- select(plants, -species) # without species col so can be used in PCA directly
+```
+
+
+
+```{r}
+miss_traits <- select(plants_all, -species) %>% 
+  is.na() %>% 
+  colSums() %>% 
+  as.data.frame() %>%
+  transmute(perc_na = ./nrow(plants_all) * 100) %>% 
+  rownames_to_column(var = "trait") %>% 
+  mutate(trait = fct_reorder(trait, perc_na))
+```
+```{r}
+ggplot(miss_traits, aes(perc_na, trait)) +
+  geom_bar(stat="identity") +
+  labs(x="Percentage of missing data", y="Trait")
 ```
 
 
 ```{r}
-colSums(is.na(plants)) %>% as.data.frame() %>% transmute(perc_na = ./nrow(plants) * 100)
+#count_na / nrow(plants)
 ```
 
 
 ```{r}
-count_na / nrow(plants)
-```
-
-
-```{r}
-nb <- estim_ncpPCA(pca_p, ncp.max=5) #this takes ages :(
+# nb <- estim_ncpPCA(pca_p, ncp.max=5) #this takes ages :(
 res.comp <- imputePCA(pca_p, ncp=2)
 res.pcs <- PCA(res.comp$completeObs)
 ```
@@ -56,8 +68,39 @@ res.pcs <- PCA(res.comp$completeObs)
 pca1 <- PCA(pca_p)
 ```
 
+```{r}
+plot.PCA(pca1, )
+```
 
 
 
+```{r}
+pca1$eig
+```
 
+```{r}
+ggplot(as.data.frame(pca1$eig), aes(`percentage of variance`)) +
+  geom_bar()
+```
+
+```{r}
+summary(pca1)
+```
+```{r}
+str(pca1)
+```
+
+```{r}
+ hist(pca1$ind$cos2)
+```
+
+```{r}
+library(psych)
+
+pairs.panels(pca_p,
+density = FALSE, ellipses = FALSE, hist.col = "grey")
+```
+```{r}
+max(pca_p$SM)
+```
 
