@@ -1,6 +1,8 @@
 ---
 title: "R Notebook"
 output: html_notebook
+editor_options: 
+  chunk_output_type: online
 ---
 
 ```{r}
@@ -61,13 +63,66 @@ pca1 <- PCA(plants_pca)
 plot.PCA(pca1, graph.type="ggplot")
 ```
 
+# remove outliers
+```{r}
+arrange(plants, desc(LA)) #remove first four species
+```
+```{r}
+plants_corr <- plants %>%
+  filter(!species %in% c("Licania micrantha", "Iriartea deltoidea", "Socratea exorrhiza", "Oenocarpus mapora", "Cecropia insignis"))
+```
+```{r}
+plants_pca2 <- select(plants_corr, -species)
+
+pca2 <- PCA(plants_pca2)
+
+pairs.panels(plants_pca2,
+density = FALSE, ellipses = FALSE, hist.col = "grey")
+```
+
 
 # Log transform and normalize data
 
 
 ```{r}
-plants2 <- map_df(plants_pca, ~log10(.) %>% scale())
+plants3 <- map_df(plants_pca2, ~log10(.) %>% scale())
 ```
+
+```{r}
+pairs.panels(plants3,
+density = FALSE, ellipses = FALSE, hist.col = "grey")
+```
+```{r}
+pca3 <- PCA(plants3)
+plot.PCA(pca3, label = "none")
+```
+
+
+# divide plants into woody and non-woody plants
+
+```{r}
+range(plants$H)
+ggplot() +
+  geom_histogram(aes(H), data = plants)
+```
+
+# take threshold of 1.5m for woody plants
+
+```{r}
+#plants3$woody <- ifelse(plants_pca2$H > 1.5, TRUE, FALSE)
+#pca4 <- PCA(plants3, quali.sup = 7)
+#plot.PCA(pca3, label = "none", habillage = 7)
+```
+```{r}
+pca3_coords <- as.data.frame(pca3$ind$coord)
+
+woody <- ifelse(plants_pca2$H>1.5, "woody", "non-woody")
+
+ggplot(pca3_coords, aes(Dim.1, Dim.2, colour=woody)) +
+  geom_point() +
+  scale_color_manual(values = c("woody" = "brown", "non-woody" = "green"))
+```
+
 
 ```{r}
 plants[which(is.infinite(log10(plants$SSD))),]
@@ -130,9 +185,13 @@ density = FALSE, ellipses = FALSE, hist.col = "grey")
 ```
 ```{r}
 which.max(plants$SM)
+
+plants[522,]
 ```
 
 ```{r}
 plants[524,]
 ```
+
+
 
