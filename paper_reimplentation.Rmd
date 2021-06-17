@@ -7,6 +7,7 @@ output: html_notebook
 library(tidyverse)
 library(FactoMineR)
 library(missMDA)
+library(psych)
 ```
 
 ```{r}
@@ -21,12 +22,15 @@ is.nan.data.frame <- function(x)
 plants_all[is.nan(plants_all)] <- NA
 
 # removes NA values
-plants <- drop_na(plants_all)
+plants <- select(plants_all, -"phot_path") %>% 
+  drop_na() %>% 
+  filter(SSD>0) # remove platns with 0 SSD
+
 plants_pca <- select(plants, -species) # without species col so can be used in PCA directly
 ```
 
 
-
+# Missing traits
 ```{r}
 miss_traits <- select(plants_all, -species) %>% 
   is.na() %>% 
@@ -41,18 +45,42 @@ ggplot(miss_traits, aes(perc_na, trait)) +
   geom_bar(stat="identity") +
   labs(x="Percentage of missing data", y="Trait")
 ```
-
+# First look at data
 
 ```{r}
-#count_na / nrow(plants)
+pairs.panels(plants_pca,
+density = FALSE, ellipses = FALSE, hist.col = "grey")
+```
+
+```{r}
+pca1 <- PCA(plants_pca)
 ```
 
 
 ```{r}
-# nb <- estim_ncpPCA(pca_p, ncp.max=5) #this takes ages :(
-res.comp <- imputePCA(pca_p, ncp=2)
-res.pcs <- PCA(res.comp$completeObs)
+plot.PCA(pca1, graph.type="ggplot")
 ```
+
+
+# Log transform and normalize data
+
+
+```{r}
+plants2 <- map_df(plants_pca, ~log10(.) %>% scale())
+```
+
+```{r}
+plants[which(is.infinite(log10(plants$SSD))),]
+```
+
+need to remove plants Ajuga reptans and 157 Carex riparia, as the SSD is 0 (updated above)
+
+
+```{r}
+plants <- plants %>% 
+  filter(SSD>0)
+```
+
 
 ```{r}
 plot(res.pcs)
@@ -101,6 +129,10 @@ pairs.panels(pca_p,
 density = FALSE, ellipses = FALSE, hist.col = "grey")
 ```
 ```{r}
-max(pca_p$SM)
+which.max(plants$SM)
+```
+
+```{r}
+plants[524,]
 ```
 
