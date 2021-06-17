@@ -47,6 +47,12 @@ ggplot(miss_traits, aes(perc_na, trait)) +
   geom_bar(stat="identity") +
   labs(x="Percentage of missing data", y="Trait")
 ```
+number of NAs per row
+```{r}
+
+```
+
+
 # First look at data
 
 ```{r}
@@ -132,8 +138,7 @@ need to remove plants Ajuga reptans and 157 Carex riparia, as the SSD is 0 (upda
 
 
 ```{r}
-plants <- plants %>% 
-  filter(SSD>0)
+
 ```
 
 
@@ -152,9 +157,17 @@ pca1 <- PCA(pca_p)
 ```
 
 ```{r}
-plot.PCA(pca1, )
+plot.PCA(pca1, label="none")
 ```
 
+```{r}
+pca1_coords <- as.data.frame(pca1$ind$coord)
+
+woody <- ifelse(plants_pca$H>1.5, "non-woody", "woody")
+
+ggplot(pca1_coords, aes(Dim.1, Dim.2, colour=woody)) +
+  geom_point()
+```
 
 
 ```{r}
