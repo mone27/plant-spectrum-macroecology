@@ -2,13 +2,12 @@
 title: "R Notebook"
 output: html_notebook
 editor_options: 
-  chunk_output_type: online
+  chunk_output_type: inline
 ---
 
 ```{r}
 library(tidyverse)
 library(FactoMineR)
-library(missMDA)
 library(psych)
 ```
 
@@ -21,6 +20,7 @@ names(plants_all) <- c("species", "LA", "LMA", "N", "phot_path", "H", "SM", "SSD
 is.nan.data.frame <- function(x)
   do.call(cbind, lapply(x, is.nan))
 
+# complete dataset
 plants_all[is.nan(plants_all)] <- NA
 
 # removes NA values
@@ -33,6 +33,7 @@ plants_pca <- select(plants, -species) # without species col so can be used in P
 
 
 # Missing traits
+
 ```{r}
 miss_traits <- select(plants_all, -species) %>% 
   is.na() %>% 
@@ -47,10 +48,6 @@ ggplot(miss_traits, aes(perc_na, trait)) +
   geom_bar(stat="identity") +
   labs(x="Percentage of missing data", y="Trait")
 ```
-number of NAs per row
-```{r}
-
-```
 
 
 # First look at data
@@ -59,31 +56,30 @@ number of NAs per row
 pairs.panels(plants_pca,
 density = FALSE, ellipses = FALSE, hist.col = "grey")
 ```
-
+Trying to fir the first PCA
 ```{r}
 pca1 <- PCA(plants_pca)
 ```
 
+# Remove outliers
 
+Here we are removing the 4 species with the highest value of Leaf Area, as they are very different from the average
 ```{r}
-plot.PCA(pca1, graph.type="ggplot")
-```
-
-# remove outliers
-```{r}
-arrange(plants, desc(LA)) #remove first four species
+arrange(plants, desc(LA)) %>%  #remove first four species
+  select(species, LA)
 ```
 ```{r}
-plants_corr <- plants %>%
+plants2 <- plants %>%
   filter(!species %in% c("Licania micrantha", "Iriartea deltoidea", "Socratea exorrhiza", "Oenocarpus mapora", "Cecropia insignis"))
 ```
-```{r}
-plants_pca2 <- select(plants_corr, -species)
 
-pca2 <- PCA(plants_pca2)
+```{r}
+plants_pca2 <- select(plants2, -species)
 
 pairs.panels(plants_pca2,
 density = FALSE, ellipses = FALSE, hist.col = "grey")
+
+pca2 <- PCA(plants_pca2)
 ```
 
 
@@ -91,34 +87,34 @@ density = FALSE, ellipses = FALSE, hist.col = "grey")
 
 
 ```{r}
-plants3 <- map_df(plants_pca2, ~log10(.) %>% scale())
+plants_pca3 <- map_df(plants_pca2, ~log10(.) %>% scale())
+plants3 <- cbind(species = plants2$species, plants_pca3)
 ```
 
 ```{r}
-pairs.panels(plants3,
+pairs.panels(plants_pca3,
 density = FALSE, ellipses = FALSE, hist.col = "grey")
 ```
 ```{r}
-pca3 <- PCA(plants3)
+pca3 <- PCA(plants_pca3)
 plot.PCA(pca3, label = "none")
+```
+
+```{r}
+summary(pca3)
 ```
 
 
 # divide plants into woody and non-woody plants
 
 ```{r}
-range(plants$H)
 ggplot() +
-  geom_histogram(aes(H), data = plants)
+  geom_histogram(aes(H), data = plants, bins=25)
 ```
 
-# take threshold of 1.5m for woody plants
+take threshold of 1.5m for woody plants (arbitrary value)
 
-```{r}
-#plants3$woody <- ifelse(plants_pca2$H > 1.5, TRUE, FALSE)
-#pca4 <- PCA(plants3, quali.sup = 7)
-#plot.PCA(pca3, label = "none", habillage = 7)
-```
+plot the PCA result separating woody and non woddy plants
 ```{r}
 pca3_coords <- as.data.frame(pca3$ind$coord)
 
@@ -130,81 +126,6 @@ ggplot(pca3_coords, aes(Dim.1, Dim.2, colour=woody)) +
 ```
 
 
-```{r}
-plants[which(is.infinite(log10(plants$SSD))),]
-```
-
-need to remove plants Ajuga reptans and 157 Carex riparia, as the SSD is 0 (updated above)
-
-
-```{r}
-
-```
-
-
-```{r}
-plot(res.pcs)
-```
-
-
-```{r}
-res.pcs <- PCA(res.comp$completeObs)
-```
-
-
-```{r}
-pca1 <- PCA(pca_p)
-```
-
-```{r}
-plot.PCA(pca1, label="none")
-```
-
-```{r}
-pca1_coords <- as.data.frame(pca1$ind$coord)
-
-woody <- ifelse(plants_pca$H>1.5, "non-woody", "woody")
-
-ggplot(pca1_coords, aes(Dim.1, Dim.2, colour=woody)) +
-  geom_point()
-```
-
-
-```{r}
-pca1$eig
-```
-
-```{r}
-ggplot(as.data.frame(pca1$eig), aes(`percentage of variance`)) +
-  geom_bar()
-```
-
-```{r}
-summary(pca1)
-```
-```{r}
-str(pca1)
-```
-
-```{r}
- hist(pca1$ind$cos2)
-```
-
-```{r}
-library(psych)
-
-pairs.panels(pca_p,
-density = FALSE, ellipses = FALSE, hist.col = "grey")
-```
-```{r}
-which.max(plants$SM)
-
-plants[522,]
-```
-
-```{r}
-plants[524,]
-```
 
 
 
