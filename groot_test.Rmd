@@ -1,0 +1,101 @@
+---
+title: "groot test"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+```
+```{r}
+groot <- read_csv("GRooTAggregateSpeciesVersion.csv")
+```
+
+```{r}
+groot_w <- groot %>% 
+  mutate(species = paste(genusTNRS, speciesTNRS)) %>% 
+  select(species, traitName, meanSpecies) %>% 
+  pivot_wider(names_from = traitName, values_from = meanSpecies)
+```
+
+```{r}
+groot_w %>% 
+  drop_na()
+```
+```{r}
+miss_traits <- groot_w %>% 
+  select(-species) %>% 
+  is.na() %>% 
+  colSums() %>% 
+  as.data.frame() %>%
+  transmute(perc_na = ./nrow(groot_w) * 100) %>% 
+  rownames_to_column(var = "trait") %>% 
+  mutate(trait = fct_reorder(trait, perc_na))
+```
+
+```{r}
+ggplot(miss_traits, aes(perc_na, trait)) +
+  geom_bar(stat="identity") +
+  labs(x="Percentage of missing data", y="Trait")
+```
+```{r}
+top <- head(sort(miss_traits$trait),8)
+```
+```{r}
+groot_w %>% 
+  select(all_of(top)) %>% 
+  drop_na() %>% 
+  nrow()
+```
+```{r}
+table(groot_w$species %in% plants$species)
+```
+
+```{r}
+top4 <- head(sort(miss_traits$trait),5)
+```
+```{r}
+groot_w %>% 
+  select(all_of(top), -`Root_mycorrhizal colonization` ) %>% 
+  drop_na() %>% 
+  nrow()
+```
+```{r}
+top
+```
+
+```{r}
+groot_t4 <- select(groot_w, all_of(top4), -`Root_mycorrhizal colonization` ) %>% 
+  drop_na()
+```
+
+```{r}
+pairs.panels(groot_t4,
+density = FALSE, ellipses = FALSE, hist.col = "grey")
+```
+
+```{r}
+groot_t4l <- map_df(groot_t4, ~log10(.) %>% scale())
+```
+```{r}
+pairs.panels(groot_t4l,
+density = FALSE, ellipses = FALSE, hist.col = "grey")
+```
+
+
+```{r}
+pca_t4 <- PCA(groot_t4l)
+```
+```{r}
+plot(pca_t4, label = "none")
+```
+
+
+```{r}
+summary(pca_t4)
+```
+
+
+```{r}
+groot_t4$`Root_mycorrhizal colonization`
+```
+
