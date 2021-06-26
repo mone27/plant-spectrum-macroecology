@@ -1,0 +1,41 @@
+---
+title: "Proper names"
+output: html_notebook
+---
+
+Load data sets
+```{r}
+plants_all <- read_rds(here::here("try_diaz_traits_sp_mean.Rds"))
+groot <- read_csv(here::here("GRooTAggregateSpeciesVersion.csv"))
+```
+
+Adjust groot data set
+```{r}
+# transform data set
+groot_w <- groot %>% 
+  mutate(species = paste(genusTNRS, speciesTNRS)) %>% 
+  select(species, traitName, meanSpecies) %>% 
+  pivot_wider(names_from = traitName, values_from = meanSpecies)
+```
+
+Adjust plants data set
+```{r}
+names(plants_all) <- c("species", "LA", "LMA", "N", "phot_path", "H", "SM", "SSD")
+```
+
+```{r}
+# match species of groot data set with Plant List
+taxmatch_groot_all <- TPL(groot_w$species, diffchar = 2, max.distance = 1)
+
+# replace species names in groot data set
+big_groot <- groot_w
+
+for (i in 1:nrow(taxmatch_groot_all)) {
+  
+ big_groot$species[which(big_groot$species == taxmatch_groot_all$Taxon[i])] <- paste(taxmatch_groot_all$New.Genus[i], taxmatch_groot_all$New.Species[i], sep = " ")
+  
+}
+
+write.csv(big_groot, "big_groot_correct_names.csv")
+```
+

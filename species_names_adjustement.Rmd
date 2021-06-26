@@ -1,0 +1,144 @@
+---
+title: "species_name_adjustement"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message=FALSE}
+library(tidyverse)
+library(Taxonstand)
+```
+
+
+```{r}
+# source("paper_reimplentation.Rmd")
+# source("groot_test.Rmd")
+```
+
+
+Load data sets
+```{r}
+plants_all <- read_rds(here::here("try_diaz_traits_sp_mean.Rds"))
+groot <- read_csv(here::here("GRooTAggregateSpeciesVersion.csv"))
+```
+
+Adjust groot data set
+```{r}
+# transform data set
+groot_w <- groot %>% 
+  mutate(species = paste(genusTNRS, speciesTNRS)) %>% 
+  select(species, traitName, meanSpecies) %>% 
+  pivot_wider(names_from = traitName, values_from = meanSpecies)
+
+# remove NA values
+groot_w %>%
+  drop_na()
+
+# select top 4 traits
+top4 <- head(sort(miss_traits$trait),5)
+groot_spec_t4 <- select(groot_w, species, all_of(top4), -`Root_mycorrhizal colonization` ) %>% 
+  drop_na()
+```
+
+Adjust plants data set
+```{r}
+names(plants_all) <- c("species", "LA", "LMA", "N", "phot_path", "H", "SM", "SSD")
+
+#replaces NaN with NAs for consistency later
+is.nan.data.frame <- function(x)
+  do.call(cbind, lapply(x, is.nan))
+
+# complete dataset
+plants_all[is.nan(plants_all)] <- NA
+
+# removes NA values
+plants <- select(plants_all, -"phot_path") %>% 
+  drop_na() %>% 
+  filter(SSD>0) # remove platns with 0 SSD
+
+plants2 <- plants %>%
+  filter(!species %in% c("Licania micrantha", "Iriartea deltoidea", "Socratea exorrhiza", "Oenocarpus mapora", "Cecropia insignis"))
+```
+
+Compare species of two data sets and match missing species from groot data set with The Plant List
+```{r}
+# create vector with species from groot data set that are not in the plant data set
+specmissing_groot <- unique(groot_spec_t4$species[which(!groot_spec_t4$species %in% plants2$species)])
+
+# match missing species with Plant List
+taxmatch_groot <- TPL(specmissing, diffchar = 2, max.distance = 1)
+```
+
+Compare species of two data sets and match missing species from plant data set with The Plant List
+```{r}
+# create vector with species from groot data set that are not in the plant data set
+specmissing_plant <- unique(plants2$species[which(!plants2$species %in% groot_spec_t4$species)])
+
+# match missing species with Plant List
+taxmatch_plant <- TPL(specmissing_plant, diffchar = 2, max.distance = 1)
+```
+
+Replace old names by new names
+```{r}
+# copy data set to keep old one
+plants3 <- plants2
+
+# replace species names
+for (i in 1:nrow(taxmatch_plant)) {
+  
+  plants3$species[which(plants3$species == taxmatch_plant$Taxon[i])] <- paste(taxmatch_plant$New.Genus[i], taxmatch_plant$New.Species[i], sep = " ")
+  
+}
+
+# copy groot data set
+groot2 <- groot_spec_t4
+
+# replace species names
+for (i in 1:nrow(taxmatch)) {
+  
+ groot2$species[which(groot2$species == taxmatch$Taxon[i])] <- paste(taxmatch$New.Genus[i], taxmatch$New.Species[i], sep = " ")
+  
+}
+
+# compare both updated data sets
+length(unique(groot_spec_t4$species[which(!groot_spec_t4$species %in% plants2$species)])) # old data set (missing species)
+length(unique(groot2$species[which(!groot2$species %in% plants3$species)])) # new data sets (missing species)
+
+length(unique(groot2$species[which(groot2$species %in% plants3$species)])) # new data sets (matching species)
+```
+
+```{r}
+length(unique(groot_w$species[which(groot_w$species %in% plants_all$species)]))
+```
+
+Create new data set with matching species and determine missing traits
+```{r}
+plant_groot <- inner_join(groot_w, plants_all, by = "species")
+
+miss_traits <- plant_groot %>% 
+  select(-species) %>% 
+  is.na() %>% 
+  colSums() %>% 
+  as.data.frame() %>%
+  transmute(perc_na = ./nrow(plant_groot) * 100) %>% 
+  rownames_to_column(var = "trait") %>% 
+  mutate(trait = fct_reorder(trait, perc_na))
+
+top10 <-  head(sort(miss_traits$trait),7)
+
+miss_traits %>% 
+  filter(trait %in% top10) %>% 
+  ggplot(aes(perc_na, trait)) +
+    geom_bar(stat="identity") +
+    labs(x="Percentage of missing data", y="Trait")
+```
+
+
+```{r}
+fingers_crossed <- select(plant_groot, top10) %>% 
+  drop_na()
+```
+
