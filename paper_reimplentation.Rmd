@@ -1,7 +1,9 @@
 ---
 title: "R Notebook"
-output: html_notebook
-editor_options: 
+output:
+  html_document:
+    df_print: paged
+editor_options:
   chunk_output_type: inline
 ---
 
@@ -15,6 +17,8 @@ library(psych)
 plants_all <- read_rds(here::here("try_diaz_traits_sp_mean.Rds"))
 
 names(plants_all) <- c("species", "LA", "LMA", "N", "phot_path", "H", "SM", "SSD")
+
+plants_all$LMA <- 1 / plants_all$LMA # in the data set it is SLA which is the opposite of LMA 
 
 #replaces NaN with NAs for consistency later
 is.nan.data.frame <- function(x)
@@ -35,7 +39,7 @@ plants_pca <- select(plants, -species) # without species col so can be used in P
 # Missing traits
 
 ```{r}
-miss_traits <- select(plants_all, -species) %>% 
+miss_traits_plants <- select(plants_all, -species) %>% 
   is.na() %>% 
   colSums() %>% 
   as.data.frame() %>%
@@ -44,7 +48,7 @@ miss_traits <- select(plants_all, -species) %>%
   mutate(trait = fct_reorder(trait, perc_na))
 ```
 ```{r}
-ggplot(miss_traits, aes(perc_na, trait)) +
+ggplot(miss_traits_plants, aes(perc_na, trait)) +
   geom_bar(stat="identity") +
   labs(x="Percentage of missing data", y="Trait")
 ```
@@ -97,7 +101,8 @@ density = FALSE, ellipses = FALSE, hist.col = "grey")
 ```
 ```{r}
 pca3 <- PCA(plants_pca3)
-plot.PCA(pca3, label = "none")
+plot.PCA(pca3, choix = "var")
+plot.PCA(pca3, choix = "ind", label = "none")
 ```
 
 ```{r}
