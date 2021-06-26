@@ -9,17 +9,33 @@ knitr::opts_chunk$set(echo = FALSE)
 ksource <- function(x, ...) {
   source(knitr::purl(x, output = tempfile()), ...)
 }
+```
+
+```{r load, include = FALSE, cache = TRUE}
 ksource("paper_reimplentation.Rmd")
 ksource("groot_test.Rmd")
-
 ```
+
+```{r library, include = FALSE}
+library(cowplot)
+library(ggplot2)
+library(tidyverse)
+library(FactoMineR)
+library(psych)
+```
+
+
 ## Background
 
 **The global spectrum of plant form and function**
 
 Díaz et al. (2016) - Nature
 
-![Díaz Figure 2: The global spectrum of plant form and function](Figures/Diaz_Figure_2.png)
+```{r Diaz}
+ggplot() +
+  draw_image("Figures/Diaz_Figure_2.png")
+```
+
 
 ## Research question
 
@@ -35,8 +51,97 @@ New data sets:
 
 - Accessing TRY database
 
-- 
+- Selection of traits
+
+- Removing outliers
+
+- Normalization and log-transformation
+
+- PCA (Principal Component Analysis)
 
 ## Selection of traits
 
+```{r traits}
+ggplot(miss_traits_plants, aes(perc_na, trait)) +
+  geom_bar(stat="identity") +
+  labs(x="Percentage of missing data", y="Trait", title = "Missing data in TRY database")
+```
 
+## Removing outliers
+
+```{r outliers}
+pairs.panels(plants_pca,
+density = FALSE, ellipses = FALSE, hist.col = "grey")
+```
+
+## Normalization and log-transformation of data
+
+```{r normalization}
+pairs.panels(plants_pca3,
+density = FALSE, ellipses = FALSE, hist.col = "grey")
+```
+
+## PCA (Principal Component Analysis)
+
+```{r PCA1}
+plot1 <- ggplot() +
+  draw_image("Figures/Diaz_Figure_2.png") +
+  scale_x_continuous(expand = c(0,0)) +
+  scale_y_continuous(expand = c(0,0))
+
+plot2 <- plot.PCA(pca3, choix = "var", graph.type = "ggplot")
+
+plot_grid(plot1, plot2)
+```
+
+## PCA (Principal Component Analysis) - Dividing between woody and non-woody species
+
+```{r woody}
+plot1b <- ggplot() +
+  draw_image("Figures/Diaz_Figure_2b.png") +
+  scale_x_continuous(expand = c(0,0)) +
+  scale_y_continuous(expand = c(0,0))
+
+plot3 <- ggplot(pca3_coords, aes(Dim.1, Dim.2, colour=woody)) +
+  geom_point() +
+  scale_color_manual(values = c("woody" = "brown", "non-woody" = "green")) +
+  theme(legend.position = "bottom")
+
+plot_grid(plot1b, plot3)
+```
+
+
+## GRooT data set - Selection of traits
+
+<img style="float: right;" width=100 src="Figures/GRooTLogo.jpg">
+
+```{r groot1}
+ggplot(miss_traits, aes(perc_na, trait)) +
+  geom_bar(stat="identity") +
+  labs(x="Percentage of missing data", y="Trait")
+```
+
+
+## GRooT data set - PCA
+
+<img style="float: right;" width=100 src="Figures/GRooTLogo.jpg">
+
+```{r groot2}
+plot4 <- plot.PCA(pca_t4, choix = "var")
+plot5 <- plot.PCA(pca_t4, choix = "ind", label = "none")
+
+plot_grid(plot4, plot5)
+```
+
+
+## GIFT (Global Inventory of Floras and Traits) data set
+
+<img style="float: right;" width=100 src="Figures/GIFT_web.png">
+
+<br/>
+<br/>
+<br/>
+
+- Trait variables are both continuous and categorical --> regular PCA not possible
+
+- Usage of PCoA (Principal Coordinates Analysis)
