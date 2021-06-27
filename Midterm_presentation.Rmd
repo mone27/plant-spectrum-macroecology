@@ -107,7 +107,8 @@ plot1b <- ggplot() +
 plot3 <- ggplot(pca3_coords, aes(Dim.1, Dim.2, colour=woody)) +
   geom_point() +
   scale_color_manual(values = c("woody" = "brown", "non-woody" = "green")) +
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom",
+        legend.title = element_blank())
 
 plot_grid(plot1b, plot3)
 ```
@@ -147,3 +148,14 @@ plot_grid(plot4, plot5)
 - Trait variables are both continuous and categorical --> regular PCA not possible
 
 - Usage of PCoA (Principal Coordinates Analysis)
+
+## Final data analysis
+
+<br/>
+<br/>
+
+- Select most important traits from each data set
+
+- Merge selected traits to one data set
+
+- Performance of PCA/PCoA
