@@ -1,5 +1,7 @@
 ---
 title: "Midterm presentation"
+author: "Simone & Johanna"
+date: "30.06.2021"
 output: ioslides_presentation
 ---
 
