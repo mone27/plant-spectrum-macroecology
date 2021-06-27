@@ -3,6 +3,15 @@ title: "Proper names"
 output: html_notebook
 ---
 
+This notebooks updates the names for both the groot and TRY dataset using the TPL
+
+It takes ages to run so should be executed only once
+
+```{r}
+library(tidyverse)
+library(Taxonstand)
+```
+
 Load data sets
 ```{r}
 plants_all <- read_rds(here::here("try_diaz_traits_sp_mean.Rds"))
@@ -36,6 +45,37 @@ for (i in 1:nrow(taxmatch_groot_all)) {
   
 }
 
-write.csv(big_groot, "big_groot_correct_names.csv")
+#write.csv(big_groot, "big_groot_correct_names.csv")
+```
+
+
+```{r}
+print(Sys.time())
+taxmatch_plants_all <- TPL(plants_all$species, diffchar = 2, max.distance = 1)
+print(Sys.time())
+```
+
+
+```{r}
+plants_nn <- plants_all
+
+for (i in 1:nrow(taxmatch_plants_all)) {
+  
+ plants_nn$species[which(plants_nn$species == taxmatch_plants_all$Taxon[i])] <- paste(taxmatch_plants_all$New.Genus[i], taxmatch_plants_all$New.Species[i], sep = " ")
+  
+}
+```
+
+```{r}
+#write_rds(plants_nn, "try_corr_names.rds")
+```
+
+```{r}
+cat("n update plants", sum(plants_nn$species != plants_all$species))
+cat("\nn plants kept", sum(plants_nn$species == plants_all$species))
+```
+```{r}
+library(lubridate)
+as_datetime("2021-06-26 16:22:31 CEST") - as_datetime("2021-06-27 00:34:04 CEST")
 ```
 
