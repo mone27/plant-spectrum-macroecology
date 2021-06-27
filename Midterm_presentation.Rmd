@@ -24,6 +24,7 @@ library(ggplot2)
 library(tidyverse)
 library(FactoMineR)
 library(psych)
+theme_set(theme_bw())
 ```
 
 
