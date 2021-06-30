@@ -8,17 +8,31 @@ output: ioslides_presentation
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 
-ksource <- function(x, ...) {
-  source(knitr::purl(x, output = tempfile()), ...)
+library(readr)
+library(stringr)
+source_rmd <- function(file_path) {
+  stopifnot(is.character(file_path) && length(file_path) == 1)
+  .tmpfile <- tempfile(fileext = ".R")
+  .con <- file(.tmpfile) 
+  on.exit(close(.con))
+  full_rmd <- read_file(file_path)
+  codes <- str_match_all(string = full_rmd, pattern = "```(?s)\\{r[^{}]*\\}\\s*\\n(.*?)```")
+  stopifnot(length(codes) == 1 && ncol(codes[[1]]) == 2)
+  codes <- paste(codes[[1]][, 2], collapse = "\n")
+  writeLines(codes, .con)
+  flush(.con)
+  cat(sprintf("R code extracted to tempfile: %s\nSourcing tempfile...", .tmpfile))
+  source(.tmpfile)
 }
+
 ```
 
-```{r load, include = FALSE, cache = TRUE}
-ksource("paper_reimplentation.Rmd")
-ksource("groot_test.Rmd")
+```{r load, include = FALSE, cache=TRUE}
+source_rmd("paper_reimplentation.Rmd")
+source_rmd("groot_test.Rmd")
 ```
 
-```{r library, include = FALSE}
+```{r , include = FALSE}
 library(cowplot)
 library(ggplot2)
 library(tidyverse)
