@@ -157,6 +157,6 @@ plot_grid(plot4, plot5)
 
 - Select most important traits from each data set
 
-- Merge selected traits to one data set
+- Merge selected traits to 1-2 data sets
 
 - Performance of PCA/PCoA
