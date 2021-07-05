@@ -1,17 +1,20 @@
 ---
-title: "R Notebook"
+title: "gift_exploration"
 output: html_notebook
 ---
 
-```{r}
+## Load Data
+```{r,message=FALSE}
 library(tidyverse)
-gift <- read_rds("paper/20210625_GIFT_traits.rds")
+gift <- read_rds("20210625_GIFT_traits.rds")
 ```
 
 ```{r}
 head(gift)
 ```
 
+
+## Missing traits
 ```{r}
 miss_traits_gift <- gift %>% 
   select(-species) %>% 
@@ -30,35 +33,31 @@ ggplot(miss_traits_gift, aes(perc_na, trait)) +
 ```
 
 
+## Closer look at some traits (most abundant traits)
 ```{r}
 table(gift$Parasite_1)
 ```
-
 ```{r}
 table(gift$Photosynthetic_pathway)
 ```
-
 ```{r}
 table(gift$Growth_form_1)
 ```
-
-
 ```{r}
 table(gift$Growth_form_2)
 ```
 ```{r}
 table(gift$Life_form_1)
 ```
-
 ```{r}
 table(gift$Life_form_2)
 ```
-
-
 ```{r}
 table(gift$Lifecycle_1)
 ```
 
+
+## Selection of 7 most abundant traits
 ```{r}
 top_7 <- miss_traits_gift %>% 
   arrange(perc_na) %>% 
@@ -67,9 +66,9 @@ top_7 <- miss_traits_gift %>%
 ```
 
 ```{r}
+# We decided to remove these two traits since Life_form_2 and Growth_form_2 have more detailed information 
 sel_traits <- top_7[!top_7 %in% c("Life_form_1", "Growth_form_1")]
 ```
-
 
 ```{r}
 gift_sel <- gift %>% 
@@ -79,7 +78,8 @@ gift_pcoa <- select(gift_sel, -species)
 ```
 
 
-```{r, message=F}
+## Calculate gower distance
+```{r, message=FALSE}
 library(StatMatch)
 ```
 ```{r}
@@ -90,14 +90,13 @@ gift_gower_dist <- gower.dist(gift_pcoa)
 dim(gift_gower_dist)
 ```
 
-```{r}
-cmdscale()
-```
 
-```{r}
-library(ape)
-```
+## Run PCoA
 
+1. with package 'ape'
+```{r}
+library(ape) # package that provides functions for PCoA
+```
 
 ```{r}
 pcoa1 <- pcoa(gift_gower_dist)
@@ -113,7 +112,11 @@ plot(pcoa1$vectors[, "Axis.1"], pcoa1$vectors[, "Axis.2"])
 ```{r}
 length(pcoa1$vectors[, "Axis.1"])
 ```
+-> we didn't really know how to visualize the results
 
+
+
+2. with package 'stats' from base R
 ```{r}
 pcoa2 <-cmdscale(gift_gower_dist, eig=TRUE, x.ret=TRUE)
  
@@ -128,7 +131,6 @@ gift_pcoa_compl <- gift_sel %>%
   )
 ```
 
-
 ```{r}
 ggplot(data=gift_pcoa_compl, aes(pcoa_ax1, pcoa_ax2, colour = Growth_form_2)) +
   geom_jitter() +
@@ -136,6 +138,8 @@ ggplot(data=gift_pcoa_compl, aes(pcoa_ax1, pcoa_ax2, colour = Growth_form_2)) +
   ylab(paste("MDS2 - ", pcoa2_var_perc[2], "%", sep="")) 
 ```
 
+
+# Sourced from Git: PCoA with base R
 ```{r}
 library(ggplot2)
 ## In this example, the data is in a matrix called
