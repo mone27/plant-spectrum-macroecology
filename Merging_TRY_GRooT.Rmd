@@ -15,11 +15,10 @@ gift <- readRDS(here::here("20210625_GIFT_traits.rds"))
 
 ## Merge data sets: try and gift
 ```{r}
-sel_traits <- c("Parasite_1", "Growth_form_2", "Lifecycle_1", "Life_form_2", "Photosynthetic_pathway")
+gift_sel_traits <- c("Parasite_1", "Growth_form_2", "Lifecycle_1", "Life_form_1", "Photosynthetic_pathway")
 
 gift_red <- gift %>% 
-  select(species, all_of(sel_traits)) #%>% 
-  drop_na()
+  select(species, all_of(gift_sel_traits))
 ```
 
 ```{r}
@@ -28,8 +27,14 @@ try_red <- try %>%
 ```
 
 ```{r}
-gift_try <- inner_join(gift_red, try_red, by = "species") %>% 
-  drop_na()
+groot_sel_traits <- c("Specific_root_length", "Root_N_concentration", "Mean_Root_diameter")
+groot_red <- groot %>% 
+  select(species, all_of(groot_sel_traits))
+```
+
+
+```{r}
+gift_try <- inner_join(gift_red, try_red, by = "species")
 ```
 
 
@@ -38,15 +43,15 @@ gift_try <- inner_join(gift_red, try_red, by = "species") %>%
 # compares each column with each other to see the pairwise amount of data available
 get_amount_data_columnwise <- function(dat, fraction=T){
   dat_pres <- dat %>% 
-  transmute(across(-species, negate(is.na)))
+    transmute(across(-species, negate(is.na)))
   
   amount_data <- map_dfr(names(dat_pres), function(n){
       # each column is compared with every other column
       row <-  map(seq_along(dat_pres), function(i){
         present <- sum(dat_pres[n] & dat_pres[i])
         if (fraction){
-           (present / nrow(dat_pres) ) %>% 
-          round(2)
+           present <- (present / nrow(dat_pres) ) %>% 
+              round(2)
         }
         present
       })
@@ -54,16 +59,57 @@ get_amount_data_columnwise <- function(dat, fraction=T){
       row
       }
     ) %>% 
-  mutate(trait = names(dat_pres)) %>% 
-  relocate(trait)
+   mutate(trait = names(dat_pres)) %>% 
+    relocate(trait)
+  return(amount_data)
 }
 ```
 
+
+
 ```{r}
-colwise <- gift_try %>% 
-  get_amount_data_columnwise(fraction = F) #%>% 
-  #rename(sp_r_len = "Specific_root_length", r_N = "Root_N_concentration",
-  #       r_diam = "Mean_Root_diameter", r_density = "Root_tissue_density") %>% 
- # knitr::kable()
+(colwise <- gift_try %>% 
+  get_amount_data_columnwise)
 ```
 
+898 
+```{r}
+gift_try %>% 
+  select(-SSD) %>% 
+  drop_na
+```
+
+1382
+```{r}
+gift_try %>% 
+  select(-SSD, -Life_form_1) %>% 
+  drop_na
+```
+
+
+```{r}
+try_gift_groot <- inner_join(groot_red, try_red, by= "species") %>% 
+  inner_join(gift_red,  by= "species")
+```
+
+
+```{r}
+try_gift_groot %>% 
+  select(-SSD, -Life_form_1) %>% 
+  drop_na()
+```
+```{r}
+try_gift_groot %>%
+  select(-SSD) %>% 
+  get_amount_data_columnwise
+```
+```{r}
+try_gift_groot %>% 
+  select(-SSD, -LA) %>% 
+  drop_na()
+```
+```{r}
+try_gift_groot %>% 
+  select(-SSD, -LA, -Mean_Root_diameter) %>% 
+  drop_na()
+```
