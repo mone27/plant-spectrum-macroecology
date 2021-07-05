@@ -140,6 +140,9 @@ ggplot(data=gift_pcoa_compl, aes(pcoa_ax1, pcoa_ax2, colour = Growth_form_2)) +
 
 
 # Sourced from Git: PCoA with base R
+
+https://github.com/StatQuest/mds_and_pcoa_demo/blob/master/mds_and_pcoa_demo.R 
+
 ```{r}
 library(ggplot2)
 ## In this example, the data is in a matrix called
