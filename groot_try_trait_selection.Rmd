@@ -1,0 +1,136 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+Load 
+```{r}
+library(tidyverse)
+```
+```{r}
+groot <- read_csv("big_groot_correct_names.csv") %>% select(-X1) #removing index
+try <- read_rds("try_corr_names.rds") %>%  select(-phot_path)
+```
+
+top interesting traits by data availability
+```{r}
+groot_traits <- c("Specific_root_length","Root_N_concentration","Mean_Root_diameter","Root_tissue_density")
+```
+
+```{r}
+groot <- groot %>% 
+  select(species, all_of(groot_traits))
+```
+
+```{r}
+groot
+```
+
+```{r}
+try
+```
+
+```{r}
+try_groot <- inner_join(try, groot, by = "species")
+```
+
+
+```{r}
+# compares each column with each other to see the pairwise amount of data available
+get_amount_data_columnwise <- function(dat, fraction=T){
+  dat_pres <- dat %>% 
+  transmute(across(-species, negate(is.na)))
+  
+  amount_data <- map_dfr(names(dat_pres), function(n){
+      # each column is compared with every other column
+      row <-  map(seq_along(dat_pres), function(i){
+        present <- sum(dat_pres[n] & dat_pres[i])
+        if (fraction){
+           (present / nrow(dat_pres) ) %>% 
+          round(2)
+        }
+        present
+      })
+      names(row) <- names(dat_pres)
+      row
+      }
+    ) %>% 
+  mutate(trait = names(dat_pres)) %>% 
+  relocate(trait)
+}
+```
+
+
+```{r}
+try_groot %>%
+  get_amount_data_columnwise %>% 
+  rename(sp_r_len = "Specific_root_length", r_N = "Root_N_concentration",
+         r_diam = "Mean_Root_diameter", r_density = "Root_tissue_density") %>% 
+  knitr::kable()
+```
+```{r}
+try_groot %>%
+  get_amount_data_columnwise(fraction = F) %>% 
+  rename(sp_r_len = "Specific_root_length", r_N = "Root_N_concentration",
+         r_diam = "Mean_Root_diameter", r_density = "Root_tissue_density") %>% 
+  knitr::kable()
+```
+
+SSD has little data available so trying to remove it
+
+```{r}
+try_groot %>%
+  select(-SSD) %>% 
+  get_amount_data_columnwise %>% 
+  rename(sp_r_len = "Specific_root_length", r_N = "Root_N_concentration",
+         r_diam = "Mean_Root_diameter", r_density = "Root_tissue_density") %>% 
+  knitr::kable()
+```
+remove SSD -> 336 plants
+
+```{r}
+try_groot %>%
+  select(-SSD) %>% 
+  drop_na()
+```
+
+Remove also root tissue -> 367
+```{r}
+try_groot %>%
+  select(-SSD, -Root_tissue_density) %>% 
+  drop_na()
+```
+
+```{r}
+(try_groot_na <- try_groot %>% 
+  transmute(across(-species, negate(is.na))))
+```
+
+```{r}
+amount_data <- map_dfr(names(try_groot_na), function(n){
+  # each column is compared with every other column
+  row <-  map(seq_along(try_groot_na), function(i){
+    (sum(try_groot_na[n] & try_groot_na[i]) / nrow(try_groot_na) ) %>% 
+      round(2)
+  })
+  names(row) <- names(try_groot_na)
+  row
+  }
+) %>% 
+  mutate(trait = names(try_groot_na)) %>% 
+  relocate(trait)
+```
+```{r}
+amount_data %>% 
+  rename(sp_r_len = "Specific_root_length", r_N = "Root_N_concentration",
+         r_diam = "Mean_Root_diameter", r_density = "Root_tissue_density") %>% 
+  knitr::kable()
+```
+
+```{r}
+try_groot %>% 
+  select(-SSD) %>% 
+  drop_na()
+```
+
+
