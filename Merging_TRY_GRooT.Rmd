@@ -1,0 +1,69 @@
+---
+title: "Merging TRY and GRooT"
+output: html_notebook
+---
+## Load data
+```{r, message=FALSE}
+library(tidyverse)
+```
+
+```{r}
+try <- readRDS(here::here("try_corr_names.rds"))
+groot <- read.csv(here::here("big_groot_correct_names.csv"))
+gift <- readRDS(here::here("20210625_GIFT_traits.rds"))
+```
+
+## Merge data sets: try and gift
+```{r}
+sel_traits <- c("Parasite_1", "Growth_form_2", "Lifecycle_1", "Life_form_2", "Photosynthetic_pathway")
+
+gift_red <- gift %>% 
+  select(species, all_of(sel_traits)) #%>% 
+  drop_na()
+```
+
+```{r}
+try_red <- try %>% 
+  select(-phot_path)
+```
+
+```{r}
+gift_try <- inner_join(gift_red, try_red, by = "species") %>% 
+  drop_na()
+```
+
+
+## Compare each column with each other
+```{r}
+# compares each column with each other to see the pairwise amount of data available
+get_amount_data_columnwise <- function(dat, fraction=T){
+  dat_pres <- dat %>% 
+  transmute(across(-species, negate(is.na)))
+  
+  amount_data <- map_dfr(names(dat_pres), function(n){
+      # each column is compared with every other column
+      row <-  map(seq_along(dat_pres), function(i){
+        present <- sum(dat_pres[n] & dat_pres[i])
+        if (fraction){
+           (present / nrow(dat_pres) ) %>% 
+          round(2)
+        }
+        present
+      })
+      names(row) <- names(dat_pres)
+      row
+      }
+    ) %>% 
+  mutate(trait = names(dat_pres)) %>% 
+  relocate(trait)
+}
+```
+
+```{r}
+colwise <- gift_try %>% 
+  get_amount_data_columnwise(fraction = F) #%>% 
+  #rename(sp_r_len = "Specific_root_length", r_N = "Root_N_concentration",
+  #       r_diam = "Mean_Root_diameter", r_density = "Root_tissue_density") %>% 
+ # knitr::kable()
+```
+
