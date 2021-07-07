@@ -5,7 +5,9 @@ output: html_notebook
 
 ```{r}
 library(tidyverse)
+library(FactoMineR)
 ```
+
 ```{r}
 groot <- read_csv("GRooTAggregateSpeciesVersion.csv")
 ```
@@ -97,5 +99,50 @@ summary(pca_t4)
 
 ```{r}
 groot_t4$`Root_mycorrhizal colonization`
+```
+
+
+
+## Check whether Fabaceae are responsible for points in the upper left corner
+```{r}
+groot <- read.csv(here::here("big_groot_correct_names.csv"))
+```
+
+```{r}
+gift_family <- read_rds(here::here("20210706_GIFT_family.rds"))
+str(gift_family)
+```
+
+```{r}
+gift_family <- gift_family %>% 
+  mutate(species = paste(genus, species, sep = " ")) 
+length(unique(gift_family$species))
+```
+
+```{r}
+groot_family <- inner_join(groot, gift_family, by = "species")
+
+top3 <- c("Specific_root_length", "Root_N_concentration", "Mean_Root_diameter", "Root_tissue_density")
+
+groot_t3 <- select(groot_family, all_of(top3)) %>% 
+  drop_na()
+
+groot_t3l <- map_df(groot_t3, ~log10(.) %>% scale())
+
+pca_t3 <- PCA(groot_t3l)
+```
+
+
+```{r}
+pca3_coords <- as.data.frame(pca_t3$ind$coord)
+
+groot_t3_sp <- select(groot_family, all_of(top3), family) %>% 
+  drop_na()
+
+faba <- ifelse(groot_t3_sp$family == "Leguminosae", "Fabaceae", "other")
+
+ggplot(pca3_coords, aes(Dim.1, Dim.2, colour=faba)) +
+  geom_point() +
+  scale_color_manual(values = c("Fabaceae" = "green", "other" = "grey"))
 ```
 
