@@ -41,27 +41,30 @@ gift_try <- inner_join(gift_red, try_red, by = "species")
 ## Compare each column with each other
 ```{r}
 # compares each column with each other to see the pairwise amount of data available
-get_amount_data_columnwise <- function(dat, fraction=T){
+get_amount_data_columnwise <- function(dat, fraction=T, perc=T){
   dat_pres <- dat %>% 
     transmute(across(-species, negate(is.na)))
-  
-  amount_data <- map_dfr(names(dat_pres), function(n){
-      # each column is compared with every other column
-      row <-  map(seq_along(dat_pres), function(i){
-        present <- sum(dat_pres[n] & dat_pres[i])
+  ncol <- length(dat_pres)
+  amount_data <- map_dfr(seq_along(dat_pres), function(i){
+      # each column is compared with every other column only with the diagonal
+      row <- rep(NA, ncol) # empty column
+      for (j in 1:i){
+        present <- sum(dat_pres[i] & dat_pres[j])
         if (fraction){
            present <- (present / nrow(dat_pres) ) %>% 
               round(2)
         }
-        present
-      })
+        row[j] <- present
+      }
+      
       names(row) <- names(dat_pres)
+      if (perc) {row <- row * 100} # convert to percentage
       row
       }
-    ) %>% 
+    )
+  amount_data %>%  
    mutate(trait = names(dat_pres)) %>% 
     relocate(trait)
-  return(amount_data)
 }
 ```
 
@@ -71,6 +74,22 @@ get_amount_data_columnwise <- function(dat, fraction=T){
 (colwise <- gift_try %>% 
   get_amount_data_columnwise)
 ```
+
+```{r}
+trait_order <- names(colwise)
+colwise %>%   
+  gather("trait2", "data", -trait) %>% 
+  mutate(
+    trait = factor(trait, rev(trait_order)),
+    trait2 = factor(trait2, trait_order)
+    ) %>% 
+  ggplot(aes(trait, trait2, label=data, fill=data)) +
+  geom_label() +
+  scale_fill_gradient(low="red", high="green") +
+  theme(axis.text.x = element_text(angle=30, hjust = 1)) +
+  labs(title = "Percentage of data available for each trait combination")
+```
+
 
 898 
 ```{r}
