@@ -1,6 +1,9 @@
 ---
 title: "Merging TRY, Gift and GRooT"
-output: html_notebook
+output: 
+  html_notebook:
+    toc: true
+
 ---
 ## Load data
 ```{r, message=FALSE}
@@ -13,8 +16,9 @@ groot <- read.csv(here::here("big_groot_correct_names.csv"))
 gift <- readRDS(here::here("20210625_GIFT_traits.rds"))
 ```
 
-## Merge data sets: try and gift
+# Merge data sets: TRY and gift
 ```{r}
+# see other notebook for this selection
 gift_sel_traits <- c("Parasite_1", "Growth_form_2", "Lifecycle_1", "Life_form_1", "Photosynthetic_pathway")
 
 gift_red <- gift %>% 
@@ -38,7 +42,7 @@ gift_try <- inner_join(gift_red, try_red, by = "species")
 ```
 
 
-## Compare each column with each other
+### Compare each column with each other
 ```{r}
 # compares each column with each other to see the pairwise amount of data available
 get_amount_data_columnwise <- function(dat, fraction=T, perc=T){
@@ -85,18 +89,21 @@ colwise %>%
   geom_label() +
   scale_fill_gradient(low="red", high="green") +
   theme(axis.text.x = element_text(angle=30, hjust = 1)) +
-  labs(title = "Percentage of data available for each trait combination")
+  labs(title= "TRY + GIFT", subtitle = "Percentage of data available for each trait combination")
 ```
 
 ## Remove some traits
-898 
+
+by removing SSD we have `898` species
+
 ```{r}
 gift_try %>% 
   select(-SSD) %>% 
   drop_na
 ```
 
-1382
+by removing also `Life_form_1` we have `1382` species
+
 ```{r}
 gift_try %>% 
   select(-SSD, -Life_form_1) %>% 
@@ -105,7 +112,7 @@ gift_try %>%
 
 
 
-## Merge all 3 data sets
+# Merge all 3 data sets
 ```{r}
 try_gift_groot <- inner_join(groot_red, try_red, by= "species") %>% 
   inner_join(gift_red,  by= "species")
@@ -130,10 +137,12 @@ colwise2 %>%
   geom_label() +
   scale_fill_gradient(low="red", high="green") +
   theme(axis.text.x = element_text(angle=30, hjust = 1)) +
-  labs(title = "Percentage of data available for each trait combination")
+  labs(title= "All datasets", subtitle = "Percentage of data available for each trait combination")
 ```
 
 ## Remove some traits
+
+
 ```{r}
 try_gift_groot %>% 
   select(-SSD, -Life_form_1) %>% 
