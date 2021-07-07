@@ -1,0 +1,159 @@
+---
+title: "Merging TRY, Gift and GRooT"
+output: html_notebook
+---
+## Load data
+```{r, message=FALSE}
+library(tidyverse)
+```
+
+```{r}
+try <- readRDS(here::here("try_corr_names.rds"))
+groot <- read.csv(here::here("big_groot_correct_names.csv"))
+gift <- readRDS(here::here("20210625_GIFT_traits.rds"))
+```
+
+## Merge data sets: try and gift
+```{r}
+gift_sel_traits <- c("Parasite_1", "Growth_form_2", "Lifecycle_1", "Life_form_1", "Photosynthetic_pathway")
+
+gift_red <- gift %>% 
+  select(species, all_of(gift_sel_traits))
+```
+
+```{r}
+try_red <- try %>% 
+  select(-phot_path)
+```
+
+```{r}
+groot_sel_traits <- c("Specific_root_length", "Root_N_concentration", "Mean_Root_diameter")
+groot_red <- groot %>% 
+  select(species, all_of(groot_sel_traits))
+```
+
+
+```{r}
+gift_try <- inner_join(gift_red, try_red, by = "species")
+```
+
+
+## Compare each column with each other
+```{r}
+# compares each column with each other to see the pairwise amount of data available
+get_amount_data_columnwise <- function(dat, fraction=T, perc=T){
+  dat_pres <- dat %>% 
+    transmute(across(-species, negate(is.na)))
+  ncol <- length(dat_pres)
+  amount_data <- map_dfr(seq_along(dat_pres), function(i){
+      # each column is compared with every other column only with the diagonal
+      row <- rep(NA, ncol) # empty column
+      for (j in 1:i){
+        present <- sum(dat_pres[i] & dat_pres[j])
+        if (fraction){
+           present <- (present / nrow(dat_pres) ) %>% 
+              round(2)
+        }
+        row[j] <- present
+      }
+      
+      names(row) <- names(dat_pres)
+      if (perc) {row <- row * 100} # convert to percentage
+      row
+      }
+    )
+  amount_data %>%  
+   mutate(trait = names(dat_pres)) %>% 
+    relocate(trait)
+}
+```
+
+
+```{r}
+(colwise <- gift_try %>% 
+  get_amount_data_columnwise)
+```
+```{r}
+trait_order <- names(colwise)
+colwise %>%   
+  gather("trait2", "data", -trait) %>% 
+  mutate(
+    trait = factor(trait, rev(trait_order)),
+    trait2 = factor(trait2, trait_order)
+    ) %>% 
+  ggplot(aes(trait, trait2, label=data, fill=data)) +
+  geom_label() +
+  scale_fill_gradient(low="red", high="green") +
+  theme(axis.text.x = element_text(angle=30, hjust = 1)) +
+  labs(title = "Percentage of data available for each trait combination")
+```
+
+## Remove some traits
+898 
+```{r}
+gift_try %>% 
+  select(-SSD) %>% 
+  drop_na
+```
+
+1382
+```{r}
+gift_try %>% 
+  select(-SSD, -Life_form_1) %>% 
+  drop_na
+```
+
+
+
+## Merge all 3 data sets
+```{r}
+try_gift_groot <- inner_join(groot_red, try_red, by= "species") %>% 
+  inner_join(gift_red,  by= "species")
+```
+
+
+## Compare columns again
+```{r}
+(colwise2 <- try_gift_groot %>% 
+  get_amount_data_columnwise)
+```
+
+```{r}
+trait_order2 <- names(colwise2)
+colwise2 %>%   
+  gather("trait2", "data", -trait) %>% 
+  mutate(
+    trait = factor(trait, rev(trait_order2)),
+    trait2 = factor(trait2, trait_order2)
+    ) %>% 
+  ggplot(aes(trait, trait2, label=data, fill=data)) +
+  geom_label() +
+  scale_fill_gradient(low="red", high="green") +
+  theme(axis.text.x = element_text(angle=30, hjust = 1)) +
+  labs(title = "Percentage of data available for each trait combination")
+```
+
+## Remove some traits
+```{r}
+try_gift_groot %>% 
+  select(-SSD, -Life_form_1) %>% 
+  drop_na() 
+# 240 species
+```
+```{r}
+try_gift_groot %>%
+  select(-SSD) %>% 
+  get_amount_data_columnwise
+```
+```{r}
+try_gift_groot %>% 
+  select(-SSD, -LA) %>% 
+  drop_na() 
+# 193 species
+```
+```{r}
+try_gift_groot %>% 
+  select(-SSD, -LA, -Mean_Root_diameter) %>% 
+  drop_na() 
+# 265 species
+```
