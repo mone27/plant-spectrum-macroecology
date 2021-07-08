@@ -6,6 +6,9 @@ output: html_notebook
 ## Load Data
 ```{r,message=FALSE}
 library(tidyverse)
+library(ade4)
+library(vegan)
+library(xfun)
 gift <- read_rds("20210625_GIFT_traits.rds")
 ```
 
@@ -41,6 +44,7 @@ table(gift$Parasite_1)
 table(gift$Photosynthetic_pathway)
 ```
 ```{r}
+#should we make this ordered?? probably no
 table(gift$Growth_form_1)
 ```
 ```{r}
@@ -67,12 +71,12 @@ top_7 <- miss_traits_gift %>%
 
 ```{r}
 # We decided to remove these two traits since Life_form_2 and Growth_form_2 have more detailed information 
-sel_traits <- top_7[!top_7 %in% c("Life_form_1", "Growth_form_1")]
+gift_sel_traits <- c("Parasite_1", "Growth_form_2", "Lifecycle_1", "Life_form_1", "Photosynthetic_pathway")
 ```
 
 ```{r}
 gift_sel <- gift %>% 
-  select(species, all_of(sel_traits)) %>% 
+  select(species, all_of(gift_sel_traits)) %>% 
   drop_na()
 gift_pcoa <- select(gift_sel, -species)
 ```
@@ -82,9 +86,31 @@ gift_pcoa <- select(gift_sel, -species)
 ```{r, message=FALSE}
 library(StatMatch)
 ```
+https://gift.uni-goettingen.de/mcmmb/Day8_long_version.html 
+
 ```{r}
 gift_gower_dist <- gower.dist(gift_pcoa)
 ```
+
+```{r}
+str(gift_pcoa)
+```
+
+
+```{r}
+#make a list separating trait based on their category
+# continuous
+# categorical
+# ordinal
+ktab1 <- ktab.list.df(list(gift_pcoa[, 1, drop = FALSE],
+gift_pcoa[, c(2:3)],
+gift_pcoa[, c(4:7)]))
+
+# second argument is the type of traits for each list name
+mat_dissim <- dist.ktab(ktab1, type = c("N", "D", "Q"),
+option = "scaledBYrange") # scaled quantitative traits
+```
+
 
 ```{r}
 dim(gift_gower_dist)
@@ -95,22 +121,22 @@ dim(gift_gower_dist)
 
 1. with package 'ape'
 ```{r}
-library(ape) # package that provides functions for PCoA
+#library(ape) # package that provides functions for PCoA
 ```
 
 ```{r}
-pcoa1 <- pcoa(gift_gower_dist)
+#pcoa1 <- pcoa(gift_gower_dist) #this is an R session crasher!!
 ```
 ```{r}
-biplot.pcoa(pcoa1, gift_pcoa)
-```
-
-```{r}
-plot(pcoa1$vectors[, "Axis.1"], pcoa1$vectors[, "Axis.2"])
+#biplot.pcoa(pcoa1)
 ```
 
 ```{r}
-length(pcoa1$vectors[, "Axis.1"])
+#plot(pcoa1$vectors[, "Axis.1"], pcoa1$vectors[, "Axis.2"])
+```
+
+```{r}
+#length(pcoa1$vectors[, "Axis.1"])
 ```
 -> we didn't really know how to visualize the results
 
@@ -118,7 +144,7 @@ length(pcoa1$vectors[, "Axis.1"])
 
 2. with package 'stats' from base R
 ```{r}
-pcoa2 <-cmdscale(gift_gower_dist, eig=TRUE, x.ret=TRUE)
+pcoa2 <- cache_rds(cmdscale(gift_gower_dist, eig=TRUE))
  
 pcoa2_var_perc <- round(pcoa2$eig/sum(pcoa2$eig)*100, 1) 
 ```
@@ -130,12 +156,56 @@ gift_pcoa_compl <- gift_sel %>%
     pcoa_ax2=pcoa2$points[,2]
   )
 ```
+```{r}
+gift_pcoa_compl
+```
+```{r}
+head(pcoa2_var_perc)
+```
+```{r}
+barplot(head(pcoa2_var_perc))
+```
+
+
+```{r}
+ggplot(data=gift_pcoa_compl, aes(pcoa_ax1, pcoa_ax2)) +
+  geom_point(alpha=.3) +
+  xlab(paste("MDS1 - ", pcoa2_var_perc[1], "%", sep="")) +
+  ylab(paste("MDS2 - ", pcoa2_var_perc[2], "%", sep="")) 
+```
 
 ```{r}
 ggplot(data=gift_pcoa_compl, aes(pcoa_ax1, pcoa_ax2, colour = Growth_form_2)) +
   geom_jitter() +
   xlab(paste("MDS1 - ", pcoa2_var_perc[1], "%", sep="")) +
   ylab(paste("MDS2 - ", pcoa2_var_perc[2], "%", sep="")) 
+```
+
+we can colour 
+```{r}
+ggplot(data=gift_pcoa_compl, aes(pcoa_ax1, pcoa_ax2, colour = Parasite_1)) +
+  geom_jitter() +
+  xlab(paste("MDS1 - ", pcoa2_var_perc[1], "%", sep="")) +
+  ylab(paste("MDS2 - ", pcoa2_var_perc[2], "%", sep="")) 
+```
+
+Projects also the categorical variables
+```{r}
+# ?envfit
+ef <- envfit(pcoa2, gift_pcoa)
+```
+
+```{r}
+ordiplot(pcoa2)
+plot(ef, p.max = 0.1)
+```
+
+```{r}
+table(gift_pcoa$Growth_form_2, gift_pcoa$Photosynthetic_pathway)
+```
+
+```{r}
+plot(table(gift_pcoa$Growth_form_2, gift_pcoa$Photosynthetic_pathway))
 ```
 
 
