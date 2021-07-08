@@ -13,7 +13,7 @@ library(stringr)
 source_rmd <- function(file_path) {
   stopifnot(is.character(file_path) && length(file_path) == 1)
   .tmpfile <- tempfile(fileext = ".R")
-  .con <- file(.tmpfile) 
+  .con <- file(.tmpfile)
   on.exit(close(.con))
   full_rmd <- read_file(file_path)
   codes <- str_match_all(string = full_rmd, pattern = "```(?s)\\{r[^{}]*\\}\\s*\\n(.*?)```")
@@ -33,6 +33,7 @@ source_rmd("paper_reimplentation.Rmd")
 
 ```{r}
 library(tidyverse)
+library(psych)
 library(FactoMineR)
 ```
 
@@ -77,7 +78,7 @@ groot_w %>%
   nrow()
 ```
 ```{r}
-table(groot_w$species %in% plants$species)
+#table(groot_w$species %in% plants$species)
 ```
 
 ```{r}
@@ -142,8 +143,8 @@ str(gift_family)
 ```
 
 ```{r}
-gift_family <- gift_family %>% 
-  mutate(species = paste(genus, species, sep = " ")) 
+gift_family <- gift_family %>%
+  mutate(species = paste(genus, species, sep = " "))
 length(unique(gift_family$species))
 ```
 
@@ -152,7 +153,7 @@ groot_family <- inner_join(groot, gift_family, by = "species")
 
 top3 <- c("Specific_root_length", "Root_N_concentration", "Mean_Root_diameter", "Root_tissue_density")
 
-groot_t3 <- select(groot_family, all_of(top3)) %>% 
+groot_t3 <- select(groot_family, all_of(top3)) %>%
   drop_na()
 
 groot_t3l <- map_df(groot_t3, ~log10(.) %>% scale())
@@ -164,7 +165,7 @@ pca_t3 <- PCA(groot_t3l)
 ```{r}
 pca3_coords <- as.data.frame(pca_t3$ind$coord)
 
-groot_t3_sp <- select(groot_family, all_of(top3), family) %>% 
+groot_t3_sp <- select(groot_family, all_of(top3), family) %>%
   drop_na()
 
 faba <- ifelse(groot_t3_sp$family == "Leguminosae", "Fabaceae", "other")
