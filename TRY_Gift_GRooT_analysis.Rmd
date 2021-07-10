@@ -112,10 +112,13 @@ gift_try %>%
 
 # Merge all 3 data sets
 ```{r}
-try_gift_groot_all <- inner_join(groot_red, try, by= "species") %>% 
+try_gift_groot_all <- inner_join(groot, try, by= "species") %>% 
   inner_join(gift_red,  by= "species")
 ```
 
+```{r}
+try_gift_groot_all
+```
 
 ## Compare columns again
 ```{r}
@@ -150,11 +153,7 @@ try_gift_groot_all %>%
 ```
 
 
-```{r}
-try_gift_groot_all %>%
-  select(-SSD) %>% 
-  get_amount_data_columnwise
-```
+
 ```{r}
 try_gift_groot_all %>% 
   select(-SSD, -LA) %>% 
@@ -190,7 +189,7 @@ try_gift_groot <- try_gift_groot %>%
 str(try_gift_groot)
 ```
 
-TODO need to check why we are missing 50 species .....!!>!>!>>>....
+
 ```{r}
 # tgg stands for Try Gift Groot
 tgg_pcoa <- try_gift_groot %>% select(-species)
@@ -212,8 +211,38 @@ gift_red %>%
   drop_na() 
 ```
 ```{r}
-tgg_pcoa %>%
-  select(!where(is.numeric))
+should_work <- tgg_pcoa %>%
+  select(!where(is.numeric)) 
+```
+
+```{r}
+tgg_pcoa %>% 
+  as.data.frame() %>% 
+  gower.dist()
+```
+```{r}
+outer
+```
+```{r}
+class(try_gift_groot)
+```
+```{r}
+class(gift_red)
+```
+
+
+```{r}
+gift_red %>% 
+  select(-species) %>% 
+  drop_na() %>% 
+  head(100) %>% 
+  gower.dist()
+```
+```{r}
+gift_red %>% 
+  select(-species) %>% 
+  drop_na() %>% 
+  gower.dist() 
 ```
 
 
