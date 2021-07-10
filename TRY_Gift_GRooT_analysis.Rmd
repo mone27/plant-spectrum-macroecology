@@ -6,17 +6,17 @@ output:
     df_print: paged
   html_notebook:
     toc: yes
-editor_options: chunk_output_type: inline
 
 ---
 ## Load data
 ```{r, message=FALSE}
 library(tidyverse)
+library(StatMatch) # for gower distance
 ```
 
 ```{r}
 try <- readRDS(here::here("data/TRY_traits_processed.rds"))
-groot <- read.csv(here::here("data/GRooT_traits_processed.csv"))
+groot <- readRDS(here::here("data/GRooT_traits_processed.rds"))
 gift <- readRDS(here::here("data/GIFT_traits.rds"))
 ```
 
@@ -24,14 +24,8 @@ gift <- readRDS(here::here("data/GIFT_traits.rds"))
 ```{r}
 # see other notebook for this selection
 gift_sel_traits <- c("Parasite_1", "Growth_form_2", "Lifecycle_1", "Life_form_1", "Photosynthetic_pathway")
-
 gift_red <- gift %>% 
   select(species, all_of(gift_sel_traits))
-```
-
-```{r}
-try_red <- try %>% 
-  select(-phot_path)
 ```
 
 ```{r}
@@ -42,7 +36,7 @@ groot_red <- groot %>%
 
 
 ```{r}
-gift_try <- inner_join(gift_red, try_red, by = "species")
+gift_try <- inner_join(gift_red, try, by = "species")
 ```
 
 
@@ -118,14 +112,14 @@ gift_try %>%
 
 # Merge all 3 data sets
 ```{r}
-try_gift_groot <- inner_join(groot_red, try_red, by= "species") %>% 
+try_gift_groot_all <- inner_join(groot_red, try, by= "species") %>% 
   inner_join(gift_red,  by= "species")
 ```
 
 
 ## Compare columns again
 ```{r}
-(colwise2 <- try_gift_groot %>% 
+(colwise2 <- try_gift_groot_all %>% 
   get_amount_data_columnwise)
 ```
 
@@ -148,29 +142,91 @@ colwise2 %>%
 
 
 ```{r}
-try_gift_groot %>% 
+try_gift_groot_all %>% 
   select(-SSD, -Life_form_1) %>% 
-  drop_na() %>% 
-  kbl()
+  drop_na()
   
 # 240 species
 ```
 
 
 ```{r}
-try_gift_groot %>%
+try_gift_groot_all %>%
   select(-SSD) %>% 
   get_amount_data_columnwise
 ```
 ```{r}
-try_gift_groot %>% 
+try_gift_groot_all %>% 
   select(-SSD, -LA) %>% 
   drop_na() 
 # 193 species
 ```
 ```{r}
-try_gift_groot %>% 
+try_gift_groot_all %>% 
   select(-SSD, -LA, -Mean_Root_diameter) %>% 
   drop_na() 
 # 265 species
 ```
+
+
+we decide to remove SSD and LA
+
+```{r}
+try_gift_groot <- try_gift_groot_all %>% 
+  select(-SSD, -LA) %>% 
+  drop_na()
+```
+
+```{r}
+str(try_gift_groot)
+```
+
+```{r}
+try_gift_groot <- try_gift_groot %>% 
+  mutate(across(where(is.numeric), as.vector))
+```
+
+```{r}
+str(try_gift_groot)
+```
+
+TODO need to check why we are missing 50 species .....!!>!>!>>>....
+```{r}
+# tgg stands for Try Gift Groot
+tgg_pcoa <- try_gift_groot %>% select(-species)
+```
+
+
+```{r}
+tgg_dist <- tgg_pcoa %>%
+  select(!where(is.numeric)) %>% 
+  gower.dist()
+```
+```{r}
+tgg_pcoa
+```
+
+```{r}
+gift_red %>% 
+  select(-species) %>% 
+  drop_na() 
+```
+```{r}
+tgg_pcoa %>%
+  select(!where(is.numeric))
+```
+
+
+```{r}
+library(psych)
+```
+
+```{r}
+pairs.panels(tgg_pcoa[,1:5])
+```
+
+```{r}
+tgg_
+```
+
+
