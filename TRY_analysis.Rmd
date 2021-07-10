@@ -14,7 +14,7 @@ library(psych)
 ```
 
 ```{r}
-plants_all <- read_rds(here::here("try_diaz_traits_sp_mean.Rds"))
+plants_all <- read_rds(here::here("data/TRY_traits_updated_names.rds"))
 
 names(plants_all) <- c("species", "LA", "LMA", "N", "phot_path", "H", "SM", "SSD")
 
@@ -91,7 +91,7 @@ pca2 <- PCA(plants_pca2)
 
 
 ```{r}
-plants_pca3 <- map_df(plants_pca2, ~log10(.) %>% scale())
+plants_pca3 <- map_df(plants_pca2, ~log10(.) %>% scale() %>% as.vector)
 plants3 <- cbind(species = plants2$species, plants_pca3)
 ```
 
@@ -128,6 +128,21 @@ woody <- ifelse(plants_pca2$H>1.5, "woody", "non-woody")
 ggplot(pca3_coords, aes(Dim.1, Dim.2, colour=woody)) +
   geom_point() +
   scale_color_manual(values = c("woody" = "brown", "non-woody" = "green"))
+```
+saving dataset 
+
+```{r}
+plants_all$SSD[plants_all$SSD <= 0] <- NA
+plants_processed <- plants_all %>% 
+  select(-phot_path) %>% 
+  filter(!species %in% c("Licania micrantha", "Iriartea deltoidea", "Socratea exorrhiza", "Oenocarpus mapora", "Cecropia insignis")) %>% # outliers for ...
+  mutate(across(-species, ~log10(.) %>% scale() %>% as.vector()))
+```
+
+
+
+```{r}
+#write_rds(plants_processed, "data/TRY_traits_processed.rds")
 ```
 
 

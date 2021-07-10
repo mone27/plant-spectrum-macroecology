@@ -28,7 +28,7 @@ source_rmd <- function(file_path) {
 ```
 
 ```{r load, include = FALSE, cache=TRUE}
-source_rmd("paper_reimplentation.Rmd")
+#source_rmd("paper_reimplentation.Rmd")
 ```
 
 ```{r}
@@ -38,27 +38,17 @@ library(FactoMineR)
 ```
 
 ```{r}
-groot <- read_csv("GRooTAggregateSpeciesVersion.csv")
+groot <- read_rds("data/GRooT_traits_updated_names.rds")
 ```
 
-```{r}
-groot_w <- groot %>% 
-  mutate(species = paste(genusTNRS, speciesTNRS)) %>% 
-  select(species, traitName, meanSpecies) %>% 
-  pivot_wider(names_from = traitName, values_from = meanSpecies)
-```
 
 ```{r}
-groot_w %>% 
-  drop_na()
-```
-```{r}
-miss_traits <- groot_w %>% 
+miss_traits <- groot %>% 
   select(-species) %>% 
   is.na() %>% 
   colSums() %>% 
   as.data.frame() %>%
-  transmute(perc_na = ./nrow(groot_w) * 100) %>% 
+  transmute(perc_na = ./nrow(groot) * 100) %>% 
   rownames_to_column(var = "trait") %>% 
   mutate(trait = fct_reorder(trait, perc_na))
 ```
@@ -72,20 +62,20 @@ ggplot(miss_traits, aes(perc_na, trait)) +
 top <- head(sort(miss_traits$trait),8)
 ```
 ```{r}
-groot_w %>% 
+groot %>% 
   select(all_of(top)) %>% 
   drop_na() %>% 
   nrow()
 ```
 ```{r}
-#table(groot_w$species %in% plants$species)
+#table(groot$species %in% plants$species)
 ```
 
 ```{r}
 top4 <- head(sort(miss_traits$trait),5)
 ```
 ```{r}
-groot_w %>% 
+groot %>% 
   select(all_of(top), -`Root_mycorrhizal colonization` ) %>% 
   drop_na() %>% 
   nrow()
@@ -95,7 +85,7 @@ top
 ```
 
 ```{r}
-groot_t4 <- select(groot_w, all_of(top4), -`Root_mycorrhizal colonization` ) %>% 
+groot_t4 <- select(groot, all_of(top4), -`Root_mycorrhizal colonization` ) %>% 
   drop_na()
 ```
 
@@ -127,18 +117,41 @@ summary(pca_t4)
 
 
 ```{r}
-groot_t4$`Root_mycorrhizal colonization`
+groot_sel_traits <- c("Specific_root_length", "Root_N_concentration", "Mean_Root_diameter", "Root_tissue_density")
+
+groot_processed <- groot %>% 
+  select(species, all_of(groot_sel_traits)) %>% 
+  mutate(across(-species, ~log10(.) %>% scale() %>% as.vector()))
+
+groot %>% 
+  select(species, all_of(groot_sel_traits)) %>% 
+  mutate(across(-species, ~log10(.) %>% scale() %>% as.vector()  ))
+```
+
+
+```{r}
+groot_sel_traits <- c("Specific_root_length", "Root_N_concentration", "Mean_Root_diameter")
+
+groot_processed <- groot %>% 
+  select(species, all_of(groot_sel_traits)) %>% 
+  mutate(across(-species, ~log10(.) %>% scale() %>% as.vector()))
+```
+
+
+```{r}
+pairs.panels(select(groot_processed, -species))
+```
+
+```{r}
+#write_rds(groot_processed, "data/GRooT_traits_processed.rds")
 ```
 
 
 
 ## Check whether Fabaceae are responsible for points in the upper left corner
-```{r}
-groot <- read.csv(here::here("big_groot_correct_names.csv"))
-```
 
 ```{r}
-gift_family <- read_rds(here::here("20210706_GIFT_family.rds"))
+gift_family <- read_rds(here::here("data/GIFT_family.rds"))
 str(gift_family)
 ```
 

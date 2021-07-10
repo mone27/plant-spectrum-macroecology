@@ -9,7 +9,7 @@ library(tidyverse)
 library(ade4)
 library(vegan)
 library(xfun)
-gift <- read_rds("20210625_GIFT_traits.rds")
+gift <- read_rds("data/GIFT_traits.rds")
 ```
 
 ```{r}
@@ -92,6 +92,7 @@ https://gift.uni-goettingen.de/mcmmb/Day8_long_version.html
 gift_gower_dist <- gower.dist(gift_pcoa)
 ```
 
+
 ```{r}
 str(gift_pcoa)
 ```
@@ -102,13 +103,13 @@ str(gift_pcoa)
 # continuous
 # categorical
 # ordinal
-ktab1 <- ktab.list.df(list(gift_pcoa[, 1, drop = FALSE],
-gift_pcoa[, c(2:3)],
-gift_pcoa[, c(4:7)]))
+#ktab1 <- ktab.list.df(list(gift_pcoa[, 1, drop = FALSE],
+#gift_pcoa[, c(2:3)],
+#gift_pcoa[, c(4:7)]))
 
 # second argument is the type of traits for each list name
-mat_dissim <- dist.ktab(ktab1, type = c("N", "D", "Q"),
-option = "scaledBYrange") # scaled quantitative traits
+#mat_dissim <- dist.ktab(ktab1, type = c("N", "D", "Q"),
+#option = "scaledBYrange") # scaled quantitative traits
 ```
 
 

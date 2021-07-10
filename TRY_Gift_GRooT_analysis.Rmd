@@ -180,10 +180,6 @@ try_gift_groot <- try_gift_groot_all %>%
 str(try_gift_groot)
 ```
 
-```{r}
-try_gift_groot <- try_gift_groot %>% 
-  mutate(across(where(is.numeric), as.vector))
-```
 
 ```{r}
 str(try_gift_groot)
@@ -192,70 +188,46 @@ str(try_gift_groot)
 
 ```{r}
 # tgg stands for Try Gift Groot
-tgg_pcoa <- try_gift_groot %>% select(-species)
+tgg_pcoa_data <- try_gift_groot %>% select(-species)
 ```
 
 
 ```{r}
-tgg_dist <- tgg_pcoa %>%
-  select(!where(is.numeric)) %>% 
-  gower.dist()
-```
-```{r}
-tgg_pcoa
-```
-
-```{r}
-gift_red %>% 
-  select(-species) %>% 
-  drop_na() 
-```
-```{r}
-should_work <- tgg_pcoa %>%
-  select(!where(is.numeric)) 
-```
-
-```{r}
-tgg_pcoa %>% 
+tgg_dist <- tgg_pcoa_data %>% 
   as.data.frame() %>% 
   gower.dist()
 ```
+
 ```{r}
-outer
+tgg_pcoa <- cmdscale(tgg_dist, eig=TRUE)
 ```
 ```{r}
-class(try_gift_groot)
-```
-```{r}
-class(gift_red)
+tgg_pcoa_var <- round(tgg_pcoa$eig/sum(tgg_pcoa$eig)*100, 1)
 ```
 
 
 ```{r}
-gift_red %>% 
-  select(-species) %>% 
-  drop_na() %>% 
-  head(100) %>% 
-  gower.dist()
-```
-```{r}
-gift_red %>% 
-  select(-species) %>% 
-  drop_na() %>% 
-  gower.dist() 
+tgg_with_pcoa <- try_gift_groot %>% 
+  mutate(
+    pcoa_ax1=tgg_pcoa$points[,1],
+    pcoa_ax2=tgg_pcoa$points[,2]
+  )
 ```
 
 
 ```{r}
-library(psych)
+ggplot() +
+  geom_bar(aes(x=head(tgg_pcoa_var) %>% as.factor(), y = head(tgg_pcoa_var)), stat = "identity")
 ```
 
-```{r}
-pairs.panels(tgg_pcoa[,1:5])
-```
 
 ```{r}
-tgg_
+tgg_with_pcoa %>% 
+ggplot(aes(pcoa_ax1, pcoa_ax2)) +
+  geom_point(alpha=.3) +
+  xlab(paste("PCoA ax 1 - ", tgg_pcoa_var [1], "%", sep="")) +
+  ylab(paste("PCoA ax 2 - ", tgg_pcoa_var [2], "%", sep="")) 
 ```
+
 
 
