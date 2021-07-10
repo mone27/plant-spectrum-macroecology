@@ -144,6 +144,7 @@ dim(gift_gower_dist)
 
 2. with package 'stats' from base R
 ```{r}
+# This is cached as it is a slow computation, takes ~1 min on simone computer 
 pcoa2 <- cache_rds(cmdscale(gift_gower_dist, eig=TRUE))
  
 pcoa2_var_perc <- round(pcoa2$eig/sum(pcoa2$eig)*100, 1) 
