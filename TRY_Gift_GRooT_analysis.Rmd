@@ -228,6 +228,145 @@ ggplot(aes(pcoa_ax1, pcoa_ax2)) +
   xlab(paste("PCoA ax 1 - ", tgg_pcoa_var [1], "%", sep="")) +
   ylab(paste("PCoA ax 2 - ", tgg_pcoa_var [2], "%", sep="")) 
 ```
+Trying to plot the axis and the categories
+```{r}
+library(vegan)
+```
 
+
+```{r}
+
+tgg_pcoa_data_new_names <- tgg_pcoa_data %>% 
+  rename_with(function(col) {paste0(col, "__")}, where(is.character))
+
+tgg_evfit <- envfit(tgg_pcoa, tgg_pcoa_data_new_names)
+```
+```{r}
+tgg_evfit
+```
+Ask pierre what how we can interpret this r2
+```{r}
+tgg_evfit$vectors$r
+```
+
+```{r}
+corr_coef <- 3.5 # This is to make sure that in the plot the arrows looks similar to the points range
+tgg_vectors <- 
+  tgg_evfit$vectors$arrows %>%
+  as.data.frame() %>% 
+  add_rownames("trait") %>% 
+  mutate(
+    Dim1 = Dim1 / corr_coef,
+    Dim2 = Dim2 / corr_coef
+  )
+```
+
+
+```{r}
+add_origins <- function(dat){
+  tibble(
+    trait = dat$trait,
+    Dim1 = 0,
+    Dim2 = 0
+  ) %>% 
+    bind_rows(dat)
+}
+```
+
+
+```{r}
+tgg_vectors_pos <- tgg_vectors %>% 
+  filter(Dim1 > 0) %>% 
+  add_origins()
+tgg_vectors_neg <- tgg_vectors %>% 
+  filter(Dim1 < 0) %>% 
+  add_origins()
+```
+
+
+```{r}
+ggplot() +
+  geom_line(aes(x= Dim1, y = Dim2, colour=trait), data = tgg_vectors_pos, arrow=arrow()) +
+  geom_line(aes(x= Dim1, y = Dim2, colour=trait), data = tgg_vectors_neg, arrow=arrow(ends = "first")) +
+  geom_label(aes(x=Dim1, y=Dim2, label=trait), data=tgg_vectors)
+```
+
+```{r}
+ggplot() +
+  geom_line(aes(x= Dim1, y = Dim2, colour=trait), data = tgg_vectors_pos, arrow=arrow()) +
+  geom_line(aes(x= Dim1, y = Dim2, colour=trait), data = tgg_vectors_neg, arrow=arrow(ends = "first")) +
+  geom_label(aes(x=Dim1, y=Dim2, label=trait), data=tgg_vectors) +
+  geom_point(aes(pcoa_ax1, pcoa_ax2), alpha=.3, data=tgg_with_pcoa) +
+  xlab(paste("PCoA ax 1 - ", tgg_pcoa_var [1], "%", sep="")) +
+  ylab(paste("PCoA ax 2 - ", tgg_pcoa_var [2], "%", sep="")) 
+```
+
+```{r}
+range(tgg_with_pcoa$pcoa_ax1)
+```
+ #### plotting also categorical traits
+ 
+```{r}
+(tgg_factors <- tgg_evfit$factors$centroids %>% 
+   as.data.frame() %>% 
+   add_rownames("trait_value"))
+```
+
+```{r}
+tgg_factors <- tgg_factors %>% 
+  mutate(
+    trait = str_extract(trait_value, ".*(?=__)"), # everything before __
+    value = str_extract(trait_value, "(?<=__).*")
+  )
+
+```
+
+
+```{r}
+str_extract(tgg_factors$trait, "(?<=__).*")
+```
+
+```{r}
+tgg_factors %>% 
+  select(trait, value) %>% 
+  print.data.frame()
+```
+
+```{r}
+ggplot()+
+  geom_point(aes(Dim1, Dim2, col=trait, shape=trait), data = tgg_factors, size=4) +
+  geom_text(aes(Dim1, Dim2, label=value), data = tgg_factors, nudge_y = 0.02) +
+  xlim(-.22, .22)
+```
+
+
+
+
+```{r}
+ggplot() +
+  geom_line(aes(x= Dim1, y = Dim2, colour=trait), data = tgg_vectors_pos, arrow=arrow()) +
+  geom_line(aes(x= Dim1, y = Dim2, colour=trait), data = tgg_vectors_neg, arrow=arrow(ends = "first")) +
+  geom_label(aes(x=Dim1, y=Dim2, label=trait), data=tgg_vectors) +
+  geom_point(aes(pcoa_ax1, pcoa_ax2), alpha=.3, data=tgg_with_pcoa) +
+  
+  geom_point(aes(Dim1, Dim2, shape=trait), data = tgg_factors, size=3) +
+  geom_text(aes(Dim1, Dim2, label=value), data = tgg_factors, nudge_y = 0.02) +
+  
+  xlab(paste("PCoA ax 1 - ", tgg_pcoa_var [1], "%", sep="")) +
+  ylab(paste("PCoA ax 2 - ", tgg_pcoa_var [2], "%", sep="")) 
+```
+
+```{r, warning=F}
+library(psych)
+pairs.panels(tgg_pcoa_data)
+```
+#### The H is not not not normal distributed :(
+
+```{r}
+#WH doesn't stand for "Wyndham Hotels & Resorts Inc" (first google result) but for Without Height (WH)
+tgg_wh <- try_gift_groot_all %>% 
+  select(-SSD, -LA, -H) %>% 
+  drop_na()
+```
 
 
