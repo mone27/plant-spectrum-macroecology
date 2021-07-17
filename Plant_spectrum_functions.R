@@ -1,0 +1,169 @@
+# source files
+library(readr)
+library(stringr)
+source_rmd <- function(file_path) {
+  stopifnot(is.character(file_path) && length(file_path) == 1)
+  .tmpfile <- tempfile(fileext = ".R")
+  .con <- file(.tmpfile) 
+  on.exit(close(.con))
+  full_rmd <- read_file(file_path)
+  codes <- str_match_all(string = full_rmd, pattern = "```(?s)\\{r[^{}]*\\}\\s*\\n(.*?)```")
+  stopifnot(length(codes) == 1 && ncol(codes[[1]]) == 2)
+  codes <- paste(codes[[1]][, 2], collapse = "\n")
+  writeLines(codes, .con)
+  flush(.con)
+  cat(sprintf("R code extracted to tempfile: %s\nSourcing tempfile...", .tmpfile))
+  source(.tmpfile)
+}
+
+
+# Missing traits
+missing_traits <- function(plants) {
+  select(plants, -species) %>% 
+  is.na() %>% 
+  colSums() %>% 
+  as.data.frame() %>%
+  transmute(perc_na = ./nrow(plants) * 100) %>% 
+  rownames_to_column(var = "trait") %>% 
+  mutate(trait = fct_reorder(trait, perc_na))
+}
+
+
+# Plotting missing traits
+plot_missing_traits <- function(miss_traits) {
+  ggplot(miss_traits, aes(perc_na, trait)) +
+    geom_col() +
+    labs(x="Percentage of missing data", y="Trait")
+}
+
+
+# Compares each column with each other to see the pairwise amount of data available
+pairwise_data_availability <- function(dat, fraction=T, perc=T){
+  # converting to presence of data (True/False)
+  dat_pres <- dat %>% 
+    transmute(across(-species, negate(is.na)))
+  ncol <- length(dat_pres)
+  amount_data <- map_dfr(seq_along(dat_pres), function(i){
+    # each column is compared with every other column only with the diagonal
+    row <- rep(NA, ncol) # empty column
+    for (j in 1:i){
+      present <- sum(dat_pres[i] & dat_pres[j])
+      if (fraction){
+        present <- (present / nrow(dat_pres) ) %>% 
+          round(2)
+      }
+      row[j] <- present
+    }
+    
+    names(row) <- names(dat_pres)
+    if (perc) {row <- row * 100} # convert to percentage
+    row
+  }
+  )
+  amount_data %>%  
+    mutate(trait = names(dat_pres)) %>% 
+    relocate(trait)
+}
+
+
+# Plot pairwise data availability
+plot_pariwise_data_availability <- function(data_avail) {
+  trait_order <- names(data_avail)
+  data_avail %>%   
+    gather("trait2", "data", -trait) %>% 
+    mutate(
+      trait = factor(trait, rev(trait_order)),
+      trait2 = factor(trait2, trait_order)
+    ) %>% 
+    ggplot(aes(trait, trait2, label=data, fill=data)) +
+    geom_label() +
+    scale_fill_gradient(low="red", high="green") +
+    theme(axis.text.x = element_text(angle=30, hjust = 1)) +
+    labs(subtitle = "Percentage of data available for each trait combination")
+}
+
+
+# PCoA function
+pcoa_gower <- function(plants) {
+ pcoa_data <- plants %>% select(-species)
+  dist <- pcoa_data %>% 
+    as.data.frame() %>% 
+    gower.dist()
+  pcoa <- cmdscale(dist, eig=TRUE)
+  return(pcoa)
+}
+
+
+# PCoA var
+get_pcoa_var <- function(pcoa) {
+  round(pcoa$eig/sum(pcoa$eig)*100, 1)
+}
+
+
+# Plot PCoA
+plot_pcoa <- function(pcoa, plants) {
+  plants <- plants %>% 
+    rename_with(function(col) {paste0(col, "__")}, where(is.character))
+  envfit <- envfit(pcoa, plants)
+  
+  pcoa_var <- get_pcoa_var(pcoa)
+  plants <- plants %>% 
+    mutate(
+      pcoa_ax1=pcoa$points[,1],
+      pcoa_ax2=pcoa$points[,2]
+    )
+ 
+  ggplot() +
+    add_vectors(envfit, arrow_scaling = .3) +
+    geom_point(aes(pcoa_ax1, pcoa_ax2), alpha=.3, data=plants) +
+    xlab(paste("PCoA ax 1 - ", pcoa_var [1], "%", sep="")) +
+    ylab(paste("PCoA ax 2 - ", pcoa_var [2], "%", sep="")) 
+}
+
+
+# Add continuous variable vectors
+add_vectors <- function(envfit, arrow_scaling = 1) { # arrow_scaling: to make sure that in the plot the arrows looks similar to the points range
+  vectors <- 
+    envfit$vectors$arrows %>%
+    as.data.frame() %>% 
+    add_rownames("trait") %>% 
+    mutate(
+      Dim1 = Dim1 * arrow_scaling,
+      Dim2 = Dim2 * arrow_scaling
+    )
+
+  add_origins <- function(dat){
+    tibble(
+      trait = dat$trait,
+      Dim1 = 0,
+      Dim2 = 0
+    ) %>% 
+      bind_rows(dat)
+  }
+
+  vectors_pos <- vectors %>% 
+    filter(Dim1 > 0) %>% 
+    add_origins()
+  vectors_neg <- vectors %>% 
+    filter(Dim1 < 0) %>% 
+    add_origins()
+
+  list(
+    geom_line(aes(x= Dim1, y = Dim2, group=trait), data = vectors_pos, arrow=arrow()),
+    geom_line(aes(x= Dim1, y = Dim2, group=trait), data = vectors_neg, arrow=arrow(ends = "first")),
+    geom_label(aes(x=Dim1, y=Dim2, label=trait), data=vectors)
+  )
+}
+
+
+# Plot PCoA var (for explanation ask the universe)
+plot_pcoa_var <- function(pcoa_var) {
+  pcoa_var <- head(pcoa_var, 5) 
+  pcoa_var %>% 
+    tibble(
+      axis = paste("axis", 1:5),
+      percentage = pcoa_var
+    ) %>% 
+  ggplot() +
+    geom_col(aes(axis, percentage), fill = "tomato4")
+}
