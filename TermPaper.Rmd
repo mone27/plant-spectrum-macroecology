@@ -1,0 +1,63 @@
+---
+title: "TermPaper"
+output: html_notebook
+---
+```{r}
+library(tidyverse)
+library(patchwork)
+library(GGally)
+```
+
+Source functions and notebooks
+```{r,results='hide', include=FALSE,fig.show='hide'}
+source("Plant_spectrum_functions.R")
+source_rmd("TRY_analysis.Rmd")
+source_rmd("GRooT_analysis.Rmd")
+source_rmd("GIFT_analysis.Rmd")
+#source_rmd("TRY_Gift_GRooT_analysis.Rmd")
+```
+
+Load data
+```{r}
+write_rds(plants_processed, "data/TRY_traits_processed.rds")
+```
+
+plots/tables: traits/trait selection, missing traits, TRY pair plot, TRY PCA, GRooT PCA, TGG pair plot, TGG PCoA, TGG woody/non-woody
+
+Missing traits (GRooT)
+```{r}
+missing_traits(groot) %>% 
+  arrange(perc_na) %>% 
+  head(15) %>% 
+  plot_missing_traits() + labs(title = "GRooT")
+```
+
+TRY
+  Trait selection
+  Merged datasets
+  
+  Pair plot
+```{r}
+pair_plots(TRY_pca)
+```
+
+  PCA
+```{r}
+our_pca(TRY3) %>% 
+  plot_pcoa(TRY_pca3)
+```
+  
+GrooT
+  Trait selection
+  Merged datasets
+  PCA
+GIft ?
+  Trait selection
+  Merged datasets
+  PCoA
+TGG
+  Trait selection
+  Merged datasets
+  PCA/PCoA
+TGG Woody / non-woody
+Patrick’s hypothesis about the Fabaceae

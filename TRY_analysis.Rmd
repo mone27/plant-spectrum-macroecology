@@ -14,41 +14,41 @@ library(psych)
 ```
 
 ```{r}
-plants_all <- read_rds(here::here("data/TRY_traits_updated_names.rds"))
+TRY_all <- read_rds(here::here("data/TRY_traits_updated_names.rds"))
 
-names(plants_all) <- c("species", "LA", "LMA", "N", "phot_path", "H", "SM", "SSD")
+names(TRY_all) <- c("species", "LA", "LMA", "N", "phot_path", "H", "SM", "SSD")
 
-plants_all$LMA <- 1 / plants_all$LMA # in the data set it is SLA which is the opposite of LMA 
+TRY_all$LMA <- 1 / TRY_all$LMA # in the data set it is SLA which is the opposite of LMA 
 
 #replaces NaN with NAs for consistency later
 is.nan.data.frame <- function(x)
   do.call(cbind, lapply(x, is.nan))
 
 # complete dataset
-plants_all[is.nan(plants_all)] <- NA
+TRY_all[is.nan(TRY_all)] <- NA
 
 # removes NA values
-plants <- select(plants_all, -"phot_path") %>% 
+TRY <- select(TRY_all, -"phot_path") %>% 
   drop_na() %>% 
-  filter(SSD>0) # remove platns with 0 SSD
+  filter(SSD>0) # remove plants with 0 SSD
 
-plants_pca <- select(plants, -species) # without species col so can be used in PCA directly
+TRY_pca <- select(TRY, -species) # without species col so can be used in PCA directly
 ```
 
 
 # Missing traits
 
 ```{r}
-miss_traits_plants <- select(plants_all, -species) %>% 
+miss_traits_TRY <- select(TRY_all, -species) %>% 
   is.na() %>% 
   colSums() %>% 
   as.data.frame() %>%
-  transmute(perc_na = ./nrow(plants_all) * 100) %>% 
+  transmute(perc_na = ./nrow(TRY_all) * 100) %>% 
   rownames_to_column(var = "trait") %>% 
   mutate(trait = fct_reorder(trait, perc_na))
 ```
 ```{r}
-ggplot(miss_traits_plants, aes(perc_na, trait)) +
+ggplot(miss_traits_TRY, aes(perc_na, trait)) +
   geom_bar(stat="identity") +
   labs(x="Percentage of missing data", y="Trait")
 ```
@@ -57,33 +57,33 @@ ggplot(miss_traits_plants, aes(perc_na, trait)) +
 # First look at data
 
 ```{r}
-pairs.panels(plants_pca,
+pairs.panels(TRY_pca,
 density = FALSE, ellipses = FALSE, hist.col = "grey")
 ```
 Trying to fir the first PCA
 ```{r}
-pca1 <- PCA(plants_pca)
+pca1 <- PCA(TRY_pca)
 ```
 
 # Remove outliers
 
 Here we are removing the 4 species with the highest value of Leaf Area, as they are very different from the average
 ```{r}
-arrange(plants, desc(LA)) %>%  #remove first four species
+arrange(TRY, desc(LA)) %>%  #remove first four species
   select(species, LA)
 ```
 ```{r}
-plants2 <- plants %>%
+TRY2 <- TRY %>%
   filter(!species %in% c("Licania micrantha", "Iriartea deltoidea", "Socratea exorrhiza", "Oenocarpus mapora", "Cecropia insignis"))
 ```
 
 ```{r}
-plants_pca2 <- select(plants2, -species)
+TRY_pca2 <- select(TRY2, -species)
 
-pairs.panels(plants_pca2,
+pairs.panels(TRY_pca2,
 density = FALSE, ellipses = FALSE, hist.col = "grey")
 
-pca2 <- PCA(plants_pca2)
+pca2 <- PCA(TRY_pca2)
 ```
 
 
@@ -91,16 +91,16 @@ pca2 <- PCA(plants_pca2)
 
 
 ```{r}
-plants_pca3 <- map_df(plants_pca2, ~log10(.) %>% scale() %>% as.vector)
-plants3 <- cbind(species = plants2$species, plants_pca3)
+TRY_pca3 <- map_df(TRY_pca2, ~log10(.) %>% scale() %>% as.vector)
+TRY3 <- cbind(species = TRY2$species, TRY_pca3)
 ```
 
 ```{r}
-pairs.panels(plants_pca3,
+pairs.panels(TRY_pca3,
 density = FALSE, ellipses = FALSE, hist.col = "grey")
 ```
 ```{r}
-pca3 <- PCA(plants_pca3)
+pca3 <- PCA(TRY_pca3)
 plot.PCA(pca3, choix = "var")
 plot.PCA(pca3, choix = "ind", label = "none")
 ```
@@ -110,20 +110,20 @@ summary(pca3)
 ```
 
 
-# divide plants into woody and non-woody plants
+# divide TRY into woody and non-woody TRY
 
 ```{r}
 ggplot() +
-  geom_histogram(aes(H), data = plants, bins=25)
+  geom_histogram(aes(H), data = TRY, bins=25)
 ```
 
-take threshold of 1.5m for woody plants (arbitrary value)
+take threshold of 1.5m for woody TRY (arbitrary value)
 
-plot the PCA result separating woody and non woddy plants
+plot the PCA result separating woody and non woddy TRY
 ```{r}
 pca3_coords <- as.data.frame(pca3$ind$coord)
 
-woody <- ifelse(plants_pca2$H>1.5, "woody", "non-woody")
+woody <- ifelse(TRY_pca2$H>1.5, "woody", "non-woody")
 
 ggplot(pca3_coords, aes(Dim.1, Dim.2, colour=woody)) +
   geom_point() +
@@ -132,8 +132,8 @@ ggplot(pca3_coords, aes(Dim.1, Dim.2, colour=woody)) +
 saving dataset 
 
 ```{r}
-plants_all$SSD[plants_all$SSD <= 0] <- NA
-plants_processed <- plants_all %>% 
+TRY_all$SSD[TRY_all$SSD <= 0] <- NA
+TRY_processed <- TRY_all %>% 
   select(-phot_path) %>% 
   filter(!species %in% c("Licania micrantha", "Iriartea deltoidea", "Socratea exorrhiza", "Oenocarpus mapora", "Cecropia insignis")) %>% # outliers for ...
   mutate(across(-species, ~log10(.) %>% scale() %>% as.vector()))
@@ -142,7 +142,7 @@ plants_processed <- plants_all %>%
 
 
 ```{r}
-#write_rds(plants_processed, "data/TRY_traits_processed.rds")
+#write_rds(TRY_processed, "data/TRY_traits_processed.rds")
 ```
 
 

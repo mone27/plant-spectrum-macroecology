@@ -36,6 +36,12 @@ plot_missing_traits <- function(miss_traits) {
     labs(x="Percentage of missing data", y="Trait")
 }
 
+# Creating pair plot with ggplot
+pair_plots <- function(dat_pca) {
+  ggpairs(dat_pca, diag = list(continuous = "barDiag")) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+}
+
 
 # Compares each column with each other to see the pairwise amount of data available
 pairwise_data_availability <- function(dat, fraction=T, perc=T){
@@ -83,6 +89,17 @@ plot_pariwise_data_availability <- function(data_avail) {
 }
 
 
+# PCA function to look like a PCoA using euclidian distance
+our_pca <- function(plants) {
+  pcoa_data <- plants %>% select(-species)
+  dist <- pcoa_data %>% 
+    as.data.frame() %>% 
+    dist()
+  pcoa <- cmdscale(dist, eig=TRUE)
+  return(pcoa)
+}
+
+
 # PCoA function
 pcoa_gower <- function(plants) {
  pcoa_data <- plants %>% select(-species)
@@ -112,9 +129,17 @@ plot_pcoa <- function(pcoa, plants) {
       pcoa_ax1=pcoa$points[,1],
       pcoa_ax2=pcoa$points[,2]
     )
- 
+  
+  max_ax1 <- range(pcoa$points[,1]) %>% 
+    abs() %>% 
+    max()
+  max_ax2 <- range(pcoa$points[,2]) %>% 
+    abs() %>% 
+    max()
+  scaling_factor <- max(max_ax1, max_ax2)
+  
   ggplot() +
-    add_vectors(envfit, arrow_scaling = .3) +
+    add_vectors(envfit, arrow_scaling = scaling_factor) +
     geom_point(aes(pcoa_ax1, pcoa_ax2), alpha=.3, data=plants) +
     xlab(paste("PCoA ax 1 - ", pcoa_var [1], "%", sep="")) +
     ylab(paste("PCoA ax 2 - ", pcoa_var [2], "%", sep="")) 
