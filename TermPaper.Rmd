@@ -14,13 +14,15 @@ source("Plant_spectrum_functions.R")
 source_rmd("TRY_analysis.Rmd")
 source_rmd("GRooT_analysis.Rmd")
 source_rmd("GIFT_analysis.Rmd")
-#source_rmd("TRY_Gift_GRooT_analysis.Rmd")
+```
+
+
+```{r}
+theme_set(theme_bw())
 ```
 
 Load data
-```{r}
-write_rds(plants_processed, "data/TRY_traits_processed.rds")
-```
+
 
 plots/tables: traits/trait selection, missing traits, TRY pair plot, TRY PCA, GRooT PCA, TGG pair plot, TGG PCoA, TGG woody/non-woody
 
@@ -43,14 +45,29 @@ pair_plots(TRY_pca)
 
   PCA
 ```{r}
-our_pca(TRY3) %>% 
-  plot_pcoa(TRY_pca3)
+try_pca <- our_pca(TRY3) #slow!
+```
+
+
+```{r}
+plot_pcoa(try_pca, TRY_pca3)
 ```
   
 GrooT
   Trait selection
   Merged datasets
   PCA
+  
+```{r}
+groot_pca <- groot_t4l %>% 
+  mutate(species = NA) %>% #the most beatiful line of code ever ;)
+  our_pca() #slow!
+```
+
+
+```{r}
+plot_pcoa(groot_pca, groot_t4l)
+```
 GIft ?
   Trait selection
   Merged datasets
@@ -59,5 +76,43 @@ TGG
   Trait selection
   Merged datasets
   PCA/PCoA
+
+```{r}
+source_rmd("TRY_Gift_GRooT_analysis.Rmd")
+```
+
+
+```{r}
+tgg_pcoa_data %>% 
+  select(!where(is.character)) %>% 
+  #rename_with(~str_wrap(.x, 10)) %>% 
+  pair_plots()
+```
+
+```{r}
+plot_pcoa(tgg_pcoa, try_gift_groot)
+```
+
+```{r}
+tgg_tree <- try_gift_groot %>% 
+  filter(Growth_form_2 == "tree")
+
+tgg_ntree <- try_gift_groot %>% 
+  filter(Growth_form_2 != "tree")
+```
+
+```{r}
+tgg_tree_plot <- tgg_tree %>% 
+  pcoa_gower() %>% 
+  plot_pcoa(tgg_tree)
+
+tgg_ntree_plot <- tgg_ntree %>% 
+  pcoa_gower() %>% 
+  plot_pcoa(tgg_ntree)
+
+tgg_tree_plot + tgg_ntree_plot
+```
+
+
 TGG Woody / non-woody
 Patrick’s hypothesis about the Fabaceae
