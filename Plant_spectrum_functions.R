@@ -117,9 +117,10 @@ get_pcoa_var <- function(pcoa) {
 }
 
 
-# Plot PCoA
+# Plot PCoA (without categorical traits)
 plot_pcoa <- function(pcoa, plants) {
   plants <- plants %>% 
+    select(-species) %>% 
     rename_with(function(col) {paste0(col, "__")}, where(is.character))
   envfit <- envfit(pcoa, plants)
   
@@ -143,6 +144,37 @@ plot_pcoa <- function(pcoa, plants) {
     geom_point(aes(pcoa_ax1, pcoa_ax2), alpha=.3, data=plants) +
     xlab(paste("PCoA ax 1 - ", pcoa_var [1], "%", sep="")) +
     ylab(paste("PCoA ax 2 - ", pcoa_var [2], "%", sep="")) 
+}
+
+
+# Plot PCoA (categorical traits)
+plot_pcoa_cat <- function(pcoa, plants) {
+  plants <- plants %>% 
+    select(-species) %>% 
+    rename_with(function(col) {paste0(col, "__")}, where(is.character))
+  envfit <- envfit(pcoa, plants)
+  
+  pcoa_var <- get_pcoa_var(pcoa)
+  plants <- plants %>% 
+    mutate(
+      pcoa_ax1=pcoa$points[,1],
+      pcoa_ax2=pcoa$points[,2]
+    )
+  
+  max_ax1 <- range(pcoa$points[,1]) %>% 
+    abs() %>% 
+    max()
+  max_ax2 <- range(pcoa$points[,2]) %>% 
+    abs() %>% 
+    max()
+  scaling_factor <- max(max_ax1, max_ax2)
+  
+  ggplot() +
+    add_vectors(envfit, arrow_scaling = scaling_factor) +
+    geom_point(aes(pcoa_ax1, pcoa_ax2), alpha=.3, data=plants) +
+    xlab(paste("PCoA ax 1 - ", pcoa_var [1], "%", sep="")) +
+    ylab(paste("PCoA ax 2 - ", pcoa_var [2], "%", sep="")) +
+    add_factors(envfit)
 }
 
 
@@ -191,4 +223,22 @@ plot_pcoa_var <- function(pcoa_var) {
     ) %>% 
   ggplot() +
     geom_col(aes(axis, percentage), fill = "tomato4")
+}
+
+
+# add categorical factors
+add_factors <- function(envfit) {
+  factors <- envfit$factors$centroids %>% 
+    as.data.frame() %>% 
+    add_rownames("trait_value")
+  factors <- factors %>% 
+    mutate(
+      trait = str_extract(trait_value, ".*(?=__)"), # everything before __
+      value = str_extract(trait_value, "(?<=__).*")
+    )
+  
+  list(
+    geom_point(aes(Dim1, Dim2, col=trait, shape=trait), data = factors, size=4),
+      geom_text(aes(Dim1, Dim2, label=value), data = factors, nudge_y = 0.02)
+  )
 }

@@ -66,6 +66,8 @@ groot_pca <- groot_t4l %>%
 
 
 ```{r}
+groot_t4l <- groot_t4l %>% 
+  mutate(species = NA)
 plot_pcoa(groot_pca, groot_t4l)
 ```
 GIft ?
@@ -113,6 +115,11 @@ tgg_ntree_plot <- tgg_ntree %>%
 tgg_tree_plot + tgg_ntree_plot
 ```
 
+Categorical traits
+
+```{r}
+plot_pcoa_cat(tgg_pcoa, try_gift_groot)
+```
 
 TGG Woody / non-woody
 Patrick’s hypothesis about the Fabaceae
