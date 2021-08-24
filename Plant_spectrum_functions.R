@@ -16,6 +16,8 @@ source_rmd <- function(file_path) {
   source(.tmpfile)
 }
 
+library(tidyverse)
+library(vegan) # to use envfit
 
 # Missing traits
 missing_traits <- function(plants) {
@@ -33,13 +35,24 @@ missing_traits <- function(plants) {
 plot_missing_traits <- function(miss_traits) {
   ggplot(miss_traits, aes(perc_na, trait)) +
     geom_col() +
+    xlim(0, 100) +
     labs(x="Percentage of missing data", y="Trait")
 }
 
+# Scatter plot with linear regression
+plot_scatter_lin_reg <- function(data, mapping){
+  ggplot(data, mapping) +
+    geom_smooth(formula = y ~ x, method = "lm",
+                se = FALSE, colour = "tomato4", size=.5) +
+    geom_point(size = .7, alpha = .7)
+}
 # Creating pair plot with ggplot
 pair_plots <- function(dat_pca) {
-  ggpairs(dat_pca, diag = list(continuous = "barDiag")) +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  ggpairs(dat_pca,
+          diag = list(continuous = wrap("barDiag", bins=18)), # n bins manually selected for current dataset
+          lower=list(continuous = plot_scatter_lin_reg),
+          progress=FALSE) +
+    theme(axis.text.x = element_text(angle = 30, hjust = 1))
 }
 
 
@@ -90,7 +103,8 @@ plot_pariwise_data_availability <- function(data_avail) {
 
 
 # PCA function to look like a PCoA using euclidian distance
-our_pca <- function(plants) {
+# This is the Plant Spectrum (ps) PCA (can find better name here)
+ps_pca <- function(plants) {
   pcoa_data <- plants %>% select(-species)
   dist <- pcoa_data %>% 
     as.data.frame() %>% 
@@ -109,6 +123,7 @@ pcoa_gower <- function(plants) {
   pcoa <- cmdscale(dist, eig=TRUE)
   return(pcoa)
 }
+
 
 
 # PCoA var
@@ -161,6 +176,7 @@ plot_pcoa_cat <- function(pcoa, plants) {
       pcoa_ax2=pcoa$points[,2]
     )
   
+  # to use the range points to estimate the best scale of the arrows
   max_ax1 <- range(pcoa$points[,1]) %>% 
     abs() %>% 
     max()
@@ -169,9 +185,10 @@ plot_pcoa_cat <- function(pcoa, plants) {
     max()
   scaling_factor <- max(max_ax1, max_ax2)
   
+  
   ggplot() +
     add_vectors(envfit, arrow_scaling = scaling_factor) +
-    geom_point(aes(pcoa_ax1, pcoa_ax2), alpha=.3, data=plants) +
+    geom_point(aes(pcoa_ax1, pcoa_ax2), alpha=.5, data=plants) +
     xlab(paste("PCoA ax 1 - ", pcoa_var [1], "%", sep="")) +
     ylab(paste("PCoA ax 2 - ", pcoa_var [2], "%", sep="")) +
     add_factors(envfit)
@@ -179,7 +196,8 @@ plot_pcoa_cat <- function(pcoa, plants) {
 
 
 # Add continuous variable vectors
-add_vectors <- function(envfit, arrow_scaling = 1) { # arrow_scaling: to make sure that in the plot the arrows looks similar to the points range
+# arrow_scaling: to make sure that in the plot the arrows looks similar to the points range
+add_vectors <- function(envfit, arrow_scaling = 1) { 
   vectors <- 
     envfit$vectors$arrows %>%
     as.data.frame() %>% 
@@ -208,12 +226,12 @@ add_vectors <- function(envfit, arrow_scaling = 1) { # arrow_scaling: to make su
   list(
     geom_line(aes(x= Dim1, y = Dim2, group=trait), data = vectors_pos, arrow=arrow()),
     geom_line(aes(x= Dim1, y = Dim2, group=trait), data = vectors_neg, arrow=arrow(ends = "first")),
-    geom_label(aes(x=Dim1, y=Dim2, label=trait), data=vectors)
+    geom_label_repel(aes(x=Dim1, y=Dim2, label=trait), data=vectors)
   )
 }
 
 
-# Plot PCoA var (for explanation ask the universe)
+# Plot PCoA var
 plot_pcoa_var <- function(pcoa_var) {
   pcoa_var <- head(pcoa_var, 5) 
   pcoa_var %>% 
@@ -239,6 +257,6 @@ add_factors <- function(envfit) {
   
   list(
     geom_point(aes(Dim1, Dim2, col=trait, shape=trait), data = factors, size=4),
-      geom_text(aes(Dim1, Dim2, label=value), data = factors, nudge_y = 0.02)
+      geom_text_repel(aes(Dim1, Dim2, label=value), data = factors, nudge_y = 0.02)
   )
 }
