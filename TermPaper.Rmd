@@ -1,25 +1,30 @@
 ---
 title: "TermPaper"
-output: html_notebook
+output:
+  pdf_document: default
+  html_notebook: default
 ---
 ```{r}
 library(tidyverse)
 library(patchwork)
 library(GGally)
+library(ggrepel)
+library(ggforce)
+library(ggtext)
+theme_set(theme_bw())
 ```
 
 Source functions and notebooks
-```{r,results='hide', include=FALSE,fig.show='hide'}
-source("Plant_spectrum_functions.R")
+```{r}
+source("Plant_spectrum_functions.R") # this should not be cached
+```
+
+```{r, results='hide', include=FALSE,fig.show='hide', cache=TRUE}
 source_rmd("TRY_analysis.Rmd")
 source_rmd("GRooT_analysis.Rmd")
 source_rmd("GIFT_analysis.Rmd")
 ```
 
-
-```{r}
-theme_set(theme_bw())
-```
 
 Load data
 
@@ -31,7 +36,15 @@ Missing traits (GRooT)
 missing_traits(groot) %>% 
   arrange(perc_na) %>% 
   head(15) %>% 
-  plot_missing_traits() + labs(title = "GRooT")
+  # mutate(traitfull = ifelse(trait %in% "Mean_Root_diameter",
+  #                       str_glue("<b style='color:#006633;'>{trait}</b>"),
+  #                       str_glue("<p style='color:#000000;'>{trait}</p>"))) %>% 
+  plot_missing_traits() +
+  labs(title = "GRooT") +
+  # theme(axis.text.y = element_markdown())
+  # geom_mark_rect(aes(x,y, label=label), 
+  #                data = expand_grid(
+  #                  x = c(0, 80), y=c(2,3,4,5), label="Selected traits")) # traits of interest
 ```
 
 TRY
@@ -44,13 +57,13 @@ pair_plots(TRY_pca)
 ```
 
   PCA
-```{r}
-try_pca <- our_pca(TRY3) #slow!
+```{r, cache=TRUE}
+try_pca <- ps_pca(TRY3) #slow!
 ```
 
 
 ```{r}
-plot_pcoa(try_pca, TRY_pca3)
+plot_pcoa(try_pca, TRY3)
 ```
   
 GrooT
@@ -58,16 +71,18 @@ GrooT
   Merged datasets
   PCA
   
-```{r}
+```{r, cache=TRUE}
+groot_t4l <- groot_t4l %>% 
+  mutate(species = NA) %>% # rename variables to improve plotting
+  rename(R_TD = "Root_tissue_density", R_diam = "Mean_Root_diameter",
+         SRL = "Specific_root_length", R_N = "Root_N_concentration")
+
 groot_pca <- groot_t4l %>% 
-  mutate(species = NA) %>% #the most beatiful line of code ever ;)
-  our_pca() #slow!
+  ps_pca() #slow!
 ```
 
 
 ```{r}
-groot_t4l <- groot_t4l %>% 
-  mutate(species = NA)
 plot_pcoa(groot_pca, groot_t4l)
 ```
 GIft ?
@@ -79,7 +94,7 @@ TGG
   Merged datasets
   PCA/PCoA
 
-```{r}
+```{r, results='hide', include=FALSE,fig.show='hide', cache=TRUE}
 source_rmd("TRY_Gift_GRooT_analysis.Rmd")
 ```
 
@@ -87,39 +102,37 @@ source_rmd("TRY_Gift_GRooT_analysis.Rmd")
 ```{r}
 tgg_pcoa_data %>% 
   select(!where(is.character)) %>% 
-  #rename_with(~str_wrap(.x, 10)) %>% 
   pair_plots()
 ```
 
 ```{r}
-plot_pcoa(tgg_pcoa, try_gift_groot)
+plot_pcoa_cat(tgg_pcoa, try_gift_groot) +
+  theme(legend.position = c(0.1, 0.79))
 ```
 
 ```{r}
 tgg_tree <- try_gift_groot %>% 
-  filter(Growth_form_2 == "tree")
+  filter(growth_form == "tree")
 
 tgg_ntree <- try_gift_groot %>% 
-  filter(Growth_form_2 != "tree")
+  filter(growth_form != "tree")
 ```
 
-```{r}
+```{r, fig.dim = c(8, 12)}
+# This looks bad in markdown but it is okay in the PDF output
 tgg_tree_plot <- tgg_tree %>% 
   pcoa_gower() %>% 
-  plot_pcoa(tgg_tree)
+  plot_pcoa_cat(tgg_tree) +
+  labs(title = "(a) Trees")
+#  theme(legend.position = c(0.1, 0.79))
 
 tgg_ntree_plot <- tgg_ntree %>% 
   pcoa_gower() %>% 
-  plot_pcoa(tgg_ntree)
+  plot_pcoa_cat(tgg_ntree) +
+  labs(title="(b) Non Trees") 
+#  theme(legend.position = c(0.1, 0.79))
 
-tgg_tree_plot + tgg_ntree_plot
+tgg_tree_plot / tgg_ntree_plot +
+  plot_layout(guide = "collect") &
+  theme(legend.position='bottom')
 ```
-
-Categorical traits
-
-```{r}
-plot_pcoa_cat(tgg_pcoa, try_gift_groot)
-```
-
-TGG Woody / non-woody
-Patrick’s hypothesis about the Fabaceae
