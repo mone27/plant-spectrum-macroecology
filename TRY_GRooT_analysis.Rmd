@@ -8,13 +8,16 @@ Load
 library(tidyverse)
 ```
 ```{r}
-groot <- read_csv("big_groot_correct_names.csv") %>% select(-X1) #removing index
+groot <- read_csv("big_groot_correct_names.csv") %>% 
+          select(-X1) #removing index
+         
+
 try <- read_rds("try_corr_names.rds") %>%  select(-phot_path)
 ```
 
 top interesting traits by data availability
 ```{r}
-groot_traits <- c("Specific_root_length","Root_N_concentration","Mean_Root_diameter","Root_tissue_density")
+groot_traits <- c("SRL","R_N","R_diam","R_TD")
 ```
 
 ```{r}
@@ -121,9 +124,7 @@ amount_data <- map_dfr(names(try_groot_na), function(n){
   relocate(trait)
 ```
 ```{r}
-amount_data %>% 
-  rename(sp_r_len = "Specific_root_length", r_N = "Root_N_concentration",
-         r_diam = "Mean_Root_diameter", r_density = "Root_tissue_density") %>% 
+amount_data %>%
   knitr::kable()
 ```
 
