@@ -8,8 +8,7 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
-library(readr)
-library(stringr)
+
 source("Plant_spectrum_functions.R")
 ```
 
@@ -172,5 +171,21 @@ faba <- ifelse(groot_t3_sp$family == "Leguminosae", "Fabaceae", "other")
 ggplot(pca3_coords, aes(Dim.1, Dim.2, colour=faba)) +
   geom_point() +
   scale_color_manual(values = c("Fabaceae" = "green", "other" = "grey"))
+```
+## Find the species in the upper left corner
+
+```{r}
+pca3_coords <- as.data.frame(pca_t3$ind$coord)
+
+groot_t3_sp <- select(groot_family, all_of(top3), family) %>%
+  drop_na()
+
+ggplot(pca3_coords, aes(Dim.1, Dim.2)) +
+  geom_point()
+```
+visually selecting the as `Dim2 > 2` and `Dim1 < 1.5`
+
+```{r}
+# sp_group <-
 ```
 
