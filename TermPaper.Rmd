@@ -1,77 +1,152 @@
 ---
-title: "TermPaper"
+title: "Globl plant Spectrum Term Paper"
+subtitle: "Term Paper \nModern concept in macroecology and Biogeography\nUni Göttingen"
+author: "Johanna Klapper & Simone Massaro"
+date: "August 2021"
 output:
+  bookdown::pdf_document2:
+    default
   pdf_document: default
   html_notebook: default
+  
+bibliography: "plant_spectrum_references.bib"
 ---
-```{r}
+
+```{r, setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache = T)
+```
+
+```{r, include=FALSE, cache=FALSE}
 library(tidyverse)
 library(patchwork)
 library(GGally)
 library(ggrepel)
 library(ggforce)
 library(ggtext)
+library(kableExtra)
 theme_set(theme_bw())
 ```
 
-Source functions and notebooks
-```{r}
-source("Plant_spectrum_functions.R") # this should not be cached
+```{r, include=FALSE}
+source("Plant_spectrum_functions.R")
 ```
 
-```{r, results='hide', include=FALSE,fig.show='hide', cache=TRUE}
+```{r, results='hide', include=FALSE,fig.show='hide', cache=TRUE, include=FALSE}
 source_rmd("TRY_analysis.Rmd")
 source_rmd("GRooT_analysis.Rmd")
 source_rmd("GIFT_analysis.Rmd")
 ```
+\newpage
+
+# Abstract
+
+Globally the distribution of plants traits is limited, hence the study of traits spectrum provide interesting insights about plants strategies.
+Diaz et. al (2016) were the first to analyze the global spectrum of plants’ traits, however they used a limited number of traits. This work extended their analysis by adding traits from new datasets: GRooT for root traits and GIFT for categorical ones.
+Our results are consistent with the findings from Díaz et al. (2016). Plant traits distribute along two main axes, one connected to the plant height and the other to the leaf economic spectrum. This remains valid also when analyzing trees and other plants separately.
+Moreover, this study provides new insights on the coordination of root traits with the rest of plant traits.
 
 
-Load data
+# Introduction
+
+The diversity of plants is characterized by a big variety of traits which allow for a wide range of possible trait constellations. However, there are only relatively few trait combinations that are actually present (Díaz et al., 2016). This leads to the scientific question of understanding how the actual traits are distributed and what their variation is. Specifically, by building a global spectrum of plant traits it is possible to understand which are the more successful combinations of traits, which are the traits that can explain the majority of the variation and to have a reference of the trait distribution that can be used to compare plants.
+In 2016, Díaz et al. published the first global analysis of vascular plant variation based on several trait combinations. Their data set included vascular plant species of numerous plant families and of a wide geographical distribution. The analysis investigated six different plant traits related to plant form and functioning: plant height, stem specific density, lead area, leaf mass per area, nitrogen content per unit leaf mass, and diaspore mass. Two key dimensions emerged from the analysis which explained almost three-quarters of the variation: the overall size of plants and the size of plant organs (e.g. seeds), and the leaf structure (e.g. nitrogen content, mass per area). The results show that the trait space that was occupied by the analyzed species is strongly restricted compared to the total possible number of trait variations. 
+From this, the question arises whether the inclusion of a wider range of traits would alter the results. Overall, it is important to note that the traits included in the analysis of Díaz et al. (2016) solely  focused on plant/leaf forms and functions and thereby neglected, for example, traits based on life form or root form and functioning. To explore if the inclusion of further traits can result in a different outcome of the analysis, we applied a similar methodology from Díaz et al. (2016), but with addition of other traits. 
+The traits used in the analysis originate from the combination of three datasets. The first dataset is the TRY dataset (Kattge et al., 2020), which includes the continuous traits used in the previous study by Diaz et al. Additionally, the GIFT (Global Inventory of Floras and Traits) dataset (Weigelt et al., 2020) was used, as it provides an extensive coverage of categorical traits. Categorical traits are traits based on explicit values that cannot be described by continuous variables (e.g. photosynthetic pathway). Finally, also the GRooT (Global Root traits) dataset (Guerrero-Ramírez et al., 2021) was included in order to explore plant diversity at the root level and understand how this might be related to leaf traits. Subsequently, the datasets will be merged together in order to be able to analyze a complete spectrum. However, the datasets have a high percentage of missing data and the overlap between species may not be optimal, hence obtaining a merged dataset with a sufficient number of species and traits can be challenging. 
+The aim of this study is to explore the traits spectrum of vascular plants, and in particular, how a spectrum obtained by the inclusion of several new traits can be compared to the global spectrum presented by Díaz et al. (2016). In their study, Díaz et al. hypothesize that adding more traits will not significantly change the overall spectrum. However we would expect that the trait distribution might occupy more space in the trait spectrum and that the two main axes of height and leaf structure will explain less of the total variation.
+
+# Methods
+
+## Data and data preparation
+Three datasets of species’ traits were used for the analysis: TRY dataset (Kattge et al., 2020), GRooT dataset (Guerrero-Ramírez et al., 2021) and GIFT dataset (Weigelt et al., 2020). These datasets consist of species names and the respective trait values. The species included in the datasets are globally distributed and represent a sufficient selection of vascular plants of different growth forms and geographical origins. The TRY dataset mainly covers traits related to plant functioning and plant form, the GIFT dataset consists of similar traits but has additional traits based on life form and growth form. The GRoot dataset includes traits related to root form and functioning.
+In a first step, the data availability in each dataset was determined in order to identify the traits with high percentages of data coverage. Unfortunately, all three datasets have a high amount of missing data as can be seen in Figure X, as an example of the missing data in the GRooT database.
+
+```{r, traits}
+traits <- tribble(
+  ~"Trait name", ~"Trait abbreviation", ~"Unit/Values",
+  "Adult plant height", "H", "m",
+  "Stem specific density", "SSD", "mg mm3",
+  "Leaf mass per area", "LMA", "g m 2",
+  "N content per unit leaf mass", "N", "mg g-",
+  "Diaspore mass", "SM", "mg",
+  "Root tissue density", "R_TD", "g cm^3)",
+  "Mean root diameter", "R_diam", "mm",
+  "Specific root length", "SRL", "mg/g",
+  "Root nitrogen concentration", "R_N", "mg/g",
+  "Parasite", "parasite", "facultative / independent / obligatory",
+  "Growth form", "growth_form", "herb / shrub / tree / other",
+  "Life form", "life_form", "chamaephyte / cryptophyte / hemicryptophyte / phanerophyte / therophyte",
+  "Lifecycle", "lifecycle", "annual / biennial",
+  "Photosynthetic pathway", "phot_path", "C3 / C4 / CAM"
+  )
+
+traits %>% 
+  kable(booktabs = T, caption = "Traits", escape = T) %>% 
+  pack_rows(index = c("TRY" = 5, "GRooT" = 4, "GIFT" = 5)) %>% 
+  column_spec(3, width = "5cm")
+```
+
+Table \@ref(tab:traits) gives an overview over the traits that were selected for the subsequent analysis. These traits were selected according to the data coverage and biological significance. The amount of data available was a key aspect in deciding which traits to select. To facilitate this process for the combined dataset the total number of rows with non-missing data was calculated for each pair of traits (see extended figure X). This allowed the identification of  the trait combination which resulted in the highest amount of data available after the merge.
+For some species, the datasets had different names, hence, in order to best compare the three different datasets, the species nomenclature was harmonized. This was done using the taxonstand R package  (Cayuela et al., 2012), which uses The Plant Index database (“Home — The Plant List,” 2021). Only the TRY and GRooT dataset were updated as the GIFT dataset already uses The Plant Index nomenclature.
+
+```{r, TRY-pair-plot, fig.cap="Pair plot with all the continous trait used in the analysis from the TRY and GRooT dataset. Red line in scatter plot are a linear regression line. Stars (*) next to the correlation coefficient represents the significance level."}
+pair_plots(TRY_pca)
+```
+
+The datasets were visually checked for outliers and extreme values (as can be seen in Figure \@ref(fig:TRY-pair-plot)) were removed. In particular for the TRY datasets the leaf area (LA) and seed mass (SM) traits had some extreme values that were removed. All the continuous variables were then normalized and transformed with a log10, in order to obtain a distribution more similar to a normal distribution.  
+The three datasets were merged using the species names, then the traits of interest were selected and the species with missing data removed.
+
+## Trait spectrum analysis
+To analyze the multidimensional spectrum, a PCA (Principal Component Analysis) (Wold et al., 1987) was conducted with the selected species and traits from the TRY dataset. For this, the function `cmdscale` from the RBase package stats was used (R Core Team, 2021). The distance matrix was then computed as euclidean distance with the function dist, also from the RBase package stats. This analysis step was executed in order to determine whether it is feasible to obtain similar results to the ones that Díaz et al. (2016) reported. However, it has to be noted that the dataset from Díaz et al. is not public, hence the version of TRY dataset used in our analysis may not be exactly the same.
+The PCA analysis is applicable only to continuous variables, however the GIFT dataset includes only categorical traits. Therefore, a new analysis approach was needed to analyze the data. A principal coordinate analysis (PCoA) was performed, using the Gower distance to calculate the distance matrix (Gower, 1971), as it works with both categorical and continuous variables. The gower distance was computed using the gower.dist from the StatMatch R Package (D’Orazio, 2020). The PCoA was then calculated using the cmdscale scale function, as was used for the PCA as well.
+The results of the PCoA/PCA analysis were plotted with the first two axes, as they explained a sufficient amount of the total variation. The function envfit, from the R package vegan (Oksanen et al., 2020), was used to fit the traits onto the PCoA points. Continuous variables were represented as vectors, while for categorical variables the centroid of each trait value was visualized.
+In an extra step, the merged dataset was divided into two datasets based on the growth form: one dataset included all species of the growth form tree, the second one all species with growth forms different to tree, according to the GIFT dataset. This approach was done, as the results indicated a strong influence of the plant height on the variation explained by the PCoA. Hence, the dataset was split to exclude the influence of the height. After dividing the merged dataset, the PCoA analysis as described before was computed again, using the gower distance and the cmdscale function.
+
+# Results
+
+## Trait plant spectrum TRY dataset
+
+For the TRY dataset the principal component analysis (PCA) was performed (Figure \@ref(fig:TRY-pca)). After the removal of missing values the dataset contained 1028 species and 6 traits. 
+The results of the multivariate analysis are very similar to the results obtained by Díaz et. al. There are two couples of traits that can explain the majority of the variation in the plat spectrum. The first one is the height (H) and the seed mass (SM), which roughly correspond to the first PCA axis. These two traits are correlated to each other, as shown by the R2 (R2 = 0.61). The second main axis of variation is connected to the traits Leaf Mass Area (LMA) and Nitrogen (N), which are negatively correlated (R2 = -0.60) and almost opposite in the PCA plot. Almost 70 % of the total variation is explained by the first two PCA axes.
 
 
-plots/tables: traits/trait selection, missing traits, TRY pair plot, TRY PCA, GRooT PCA, TGG pair plot, TGG PCoA, TGG woody/non-woody
+```{r, cache=TRUE, include=FALSE}
+try_pca <- ps_pca(TRY3) #slow!
+```
 
-Missing traits (GRooT)
-```{r}
+
+```{r, TRY-pca, fig.cap="PCA for TRY dataset. Axes 1 and 2 with the amount of variation explained. Arrows represent continous traits"}
+plot_pcoa(try_pca, TRY3, label="PCA")
+```
+
+
+## Plant trait spectrum of root traits
+The GRooT dataset required more pre-processing, as many traits are missing for the majority of the species (Figure  \@ref(fig:groot-missing-trait)). Therefore, only 4 traits were selected:
+
+- Root tissue density
+- Mean root diameter
+- Specific root length
+- Root Nitrogen concentration
+
+
+```{r, groot-missing-trait, fig.cap="Percentage of species where trait is present for the 15 most available traits in the whole GRooT dataset"}
 missing_traits(groot) %>% 
   arrange(perc_na) %>% 
   head(15) %>% 
   # mutate(traitfull = ifelse(trait %in% "Mean_Root_diameter",
   #                       str_glue("<b style='color:#006633;'>{trait}</b>"),
   #                       str_glue("<p style='color:#000000;'>{trait}</p>"))) %>% 
-  plot_missing_traits() +
-  labs(title = "GRooT") +
+  plot_missing_traits()
+  #labs(title = "GRooT") 
   # theme(axis.text.y = element_markdown())
   # geom_mark_rect(aes(x,y, label=label), 
   #                data = expand_grid(
   #                  x = c(0, 80), y=c(2,3,4,5), label="Selected traits")) # traits of interest
 ```
 
-TRY
-  Trait selection
-  Merged datasets
-  
-  Pair plot
-```{r}
-pair_plots(TRY_pca)
-```
+Even though the trait “Root mycorrhizal colonization” showed the lowest percentage of missing data, it was not included in the data analysis as this trait was of minor importance and by removing it, it was possible to include more species in the analysis.
+The PCA analysis was performed with 824 species and 4 traits (Figure \@ref(fig:groot-pca)). The four traits can be divided into two couples. The specific root length is highly correlated with the first PCA axis and opposed to the mean root diameter. Conversely, the root nitrogen concentration is opposed to the root tissue density and more correlated with the second PCA axis. The first two axes explain more than 75% of the total variation.
 
-  PCA
-```{r, cache=TRUE}
-try_pca <- ps_pca(TRY3) #slow!
-```
-
-
-```{r}
-plot_pcoa(try_pca, TRY3)
-```
-  
-GrooT
-  Trait selection
-  Merged datasets
-  PCA
-  
-```{r, cache=TRUE}
+```{r, cache=TRUE, include=FALSE}
 groot_t4l <- groot_t4l %>% 
   mutate(species = NA) %>% # rename variables to improve plotting
   rename(R_TD = "Root_tissue_density", R_diam = "Mean_Root_diameter",
@@ -81,36 +156,60 @@ groot_pca <- groot_t4l %>%
   ps_pca() #slow!
 ```
 
-
-```{r}
-plot_pcoa(groot_pca, groot_t4l)
+```{r, groot-pca, fig.cap="PCA for GRooT dataset. Axes 1 and 2 with the amount of variation explained. Arrows represent continous traits"}
+plot_pcoa(groot_pca, groot_t4l, label="PCA")
 ```
-GIft ?
-  Trait selection
-  Merged datasets
-  PCoA
-TGG
-  Trait selection
-  Merged datasets
-  PCA/PCoA
 
-```{r, results='hide', include=FALSE,fig.show='hide', cache=TRUE}
+## Plant trait spectrum of leaf, root and plant traits
+
+Based on the data availability, the following continuous traits from the TRY and GRooT dataset were used for the joined analysis: 
+
+- Specific root length
+- Root nitrogen concentration
+- Mean root diameter
+- Leaf mass area
+- Leaf nitrogen concentration
+- Plant height
+- Seed mass
+
+In comparison to the single analysis of the datasets, as described before, the joined analysis did not include the leaf area, the specific stem density and the root tissue density anymore, as the data limitation of these traits severely reduced the number of species that could be included in the analysis.
+Figure X shows the correlation between the analyzed traits and the distribution of the data points. It becomes clear that plant height is negatively correlated with the root length and the seed mass and positively correlated with the root diameter of plants. Furthermore, the figure shows that root diameter and root length are negatively correlated. It is however noticeable that the data points related to the plant height are not normally distributed, even after normalizing the data. This might be due to the removal of missing data and, subsequently, the removal of species from the data set.
+
+```{r, results='hide', include=FALSE,fig.show='hide', cache=TRUE, include=FALSE}
 source_rmd("TRY_Gift_GRooT_analysis.Rmd")
 ```
 
 
-```{r}
+```{r, label=tgg-pair-plot, fig.cap="Pair plot with all the continous trait used in the analysis from the TRY and GRooT dataset. Red line in scatter plot are a linear regression line. Stars (*) next to the correlation coefficient represents the significance level."}
 tgg_pcoa_data %>% 
   select(!where(is.character)) %>% 
   pair_plots()
 ```
 
-```{r}
+Figure \@ref(fig:tgg-pair-plot)
+
+For the categorical traits that were included in the GIFT data set, the following traits were selected for the analysis:
+
+- Parasite
+- Growth form
+- Lifecycle
+- Life form
+- Photosynthetic pathway
+
+
+A detailed description of the individual traits can be found in Table X. The merged data table of all three datasets consists of 193 species and 12 different traits.
+For the joined dataset a Principal Coordinate Analysis (PCoA) was performed. The first axis of the PCoA explains about 60% of the variation and, as can be seen in Figure X, is mainly related to the plant height and the seed mass. The second axis accounts for about 15% of the variation and is connected to the leaf mass area and leaf nitrogen concentration. In accordance with the results shown in Figure X, the PCoA indicates the positive correlation of plant height, seed mass and root diameter and the negative correlation of these traits with root length. The distribution of the categorical traits shows that high growing plants belong to the life form ‘tree’ and the growth form ‘phanerophyte’ and that for low growing plants the traits can be distinguished for plants with smaller leaves and higher nitrogen concentration and plants with bigger leaves and lower nitrogen concentration. The latter mainly belong to the growth form ‘graminoid’ and the life forms ‘hemicryptophyte’ and ‘chamaephyte’. It is also noticeable that among the smaller plants, species with bigger leaves are mainly C4 plants, whereas C3 plants are shown to be of medium height and to have medium leaves. Concerning the life cycle of the plant species, the PCoA shows that medium high plants are mainly perennial plants, whereas smaller plants have a biennial and annual life cycle. 
+
+
+
+```{r, label=tgg-pcoa, fig.cap="PCoA axes 1 and 2 with complete dataset with traits from TRY, GRooT and GIFT. Arrow represent continous traits while point different values of categorical traits."}
 plot_pcoa_cat(tgg_pcoa, try_gift_groot) +
-  theme(legend.position = c(0.1, 0.79))
+  theme(legend.position = c(0.1, 0.80))
 ```
 
-```{r}
+Figure \@ref(fig:tgg-pcoa)
+
+```{r, include=FALSE}
 tgg_tree <- try_gift_groot %>% 
   filter(growth_form == "tree")
 
@@ -118,21 +217,24 @@ tgg_ntree <- try_gift_groot %>%
   filter(growth_form != "tree")
 ```
 
-```{r, fig.dim = c(8, 12)}
+```{r, fig.dim = c(8, 12), label=tgg-tree-pcoa, fig.cap="PCoA axes 1 and 2 with dataset divided between trees (a) and non trees (b). Arrow represent continous traits while point different values of categorical traits."}
 # This looks bad in markdown but it is okay in the PDF output
 tgg_tree_plot <- tgg_tree %>% 
   pcoa_gower() %>% 
   plot_pcoa_cat(tgg_tree) +
   labs(title = "(a) Trees")
-#  theme(legend.position = c(0.1, 0.79))
 
 tgg_ntree_plot <- tgg_ntree %>% 
   pcoa_gower() %>% 
   plot_pcoa_cat(tgg_ntree) +
   labs(title="(b) Non Trees") 
-#  theme(legend.position = c(0.1, 0.79))
 
 tgg_tree_plot / tgg_ntree_plot +
   plot_layout(guide = "collect") &
   theme(legend.position='bottom')
 ```
+
+Figure \@ref(fig:tgg-tree-pcoa)
+
+\newpage
+# References

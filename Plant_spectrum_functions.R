@@ -18,6 +18,7 @@ source_rmd <- function(file_path) {
 
 library(tidyverse)
 library(vegan) # to use envfit
+library(FactoMineR)
 
 # Missing traits
 missing_traits <- function(plants) {
