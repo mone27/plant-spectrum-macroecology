@@ -18,7 +18,7 @@ source_rmd <- function(file_path) {
 
 library(tidyverse)
 library(vegan) # to use envfit
-library(FactoMineR)
+library(StatMatch)
 
 # Missing traits
 missing_traits <- function(plants) {
@@ -134,7 +134,7 @@ get_pcoa_var <- function(pcoa) {
 
 
 # Plot PCoA (without categorical traits)
-plot_pcoa <- function(pcoa, plants) {
+plot_pcoa <- function(pcoa, plants, label="PCoA") {
   plants <- plants %>% 
     select(-species) %>% 
     rename_with(function(col) {paste0(col, "__")}, where(is.character))
@@ -158,8 +158,8 @@ plot_pcoa <- function(pcoa, plants) {
   ggplot() +
     add_vectors(envfit, arrow_scaling = scaling_factor) +
     geom_point(aes(pcoa_ax1, pcoa_ax2), alpha=.3, data=plants) +
-    xlab(paste("PCoA ax 1 - ", pcoa_var [1], "%", sep="")) +
-    ylab(paste("PCoA ax 2 - ", pcoa_var [2], "%", sep="")) 
+    xlab(paste(label, " ax 1 - ", pcoa_var [1], "%", sep="")) +
+    ylab(paste(label, " ax 2 - ", pcoa_var [2], "%", sep="")) 
 }
 
 
@@ -202,7 +202,7 @@ add_vectors <- function(envfit, arrow_scaling = 1) {
   vectors <- 
     envfit$vectors$arrows %>%
     as.data.frame() %>% 
-    add_rownames("trait") %>% 
+    rownames_to_column("trait") %>% 
     mutate(
       Dim1 = Dim1 * arrow_scaling,
       Dim2 = Dim2 * arrow_scaling
@@ -249,7 +249,7 @@ plot_pcoa_var <- function(pcoa_var) {
 add_factors <- function(envfit) {
   factors <- envfit$factors$centroids %>% 
     as.data.frame() %>% 
-    add_rownames("trait_value")
+    rownames_to_column("trait_value")
   factors <- factors %>% 
     mutate(
       trait = str_extract(trait_value, ".*(?=__)"), # everything before __
