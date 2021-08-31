@@ -60,7 +60,7 @@ ggplot(miss_traits_TRY, aes(perc_na, trait)) +
 pairs.panels(TRY_pca,
 density = FALSE, ellipses = FALSE, hist.col = "grey")
 ```
-Trying to fir the first PCA
+Trying to fit the first PCA
 ```{r}
 pca1 <- PCA(TRY_pca)
 ```

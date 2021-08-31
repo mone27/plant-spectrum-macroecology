@@ -183,7 +183,7 @@ ggplot(data=gift_pcoa_compl, aes(pcoa_ax1, pcoa_ax2, colour = Growth_form_2)) +
   ylab(paste("MDS2 - ", pcoa2_var_perc[2], "%", sep="")) 
 ```
 
-we can colour 
+we can color by trait
 ```{r}
 ggplot(data=gift_pcoa_compl, aes(pcoa_ax1, pcoa_ax2, colour = Parasite_1)) +
   geom_jitter() +

@@ -256,7 +256,7 @@ tgg_evfit <- envfit(tgg_pcoa, tgg_pcoa_data_new_names)
 tgg_evfit
 ```
 
-Ask pierre what how we can interpret this r2
+How can we interpret this r2?
 
 ```{r}
 tgg_evfit$vectors$r
@@ -373,7 +373,7 @@ library(psych)
 pairs.panels(tgg_pcoa_data)
 ```
 
-#### The H is not not not normal distributed :(
+#### The H is not normal distributed
 
 ```{r}
 #WH doesn't stand for "Wyndham Hotels & Resorts Inc" (first google result) but for Without Height (WH)

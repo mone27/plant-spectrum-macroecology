@@ -15,7 +15,7 @@ groot <- read_csv("big_groot_correct_names.csv") %>%
 try <- read_rds("try_corr_names.rds") %>%  select(-phot_path)
 ```
 
-top interesting traits by data availability
+top 4 interesting traits by data availability
 ```{r}
 groot_traits <- c("SRL","R_N","R_diam","R_TD")
 ```
