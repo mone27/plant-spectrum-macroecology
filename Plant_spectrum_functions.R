@@ -92,12 +92,13 @@ plot_pariwise_data_availability <- function(data_avail) {
   data_avail %>%   
     gather("trait2", "data", -trait) %>% 
     mutate(
-      trait = factor(trait, rev(trait_order)),
-      trait2 = factor(trait2, trait_order)
+      trait_1 = factor(trait, rev(trait_order)),
+      trait_2 = factor(trait2, trait_order)
     ) %>% 
-    ggplot(aes(trait, trait2, label=data, fill=data)) +
+    drop_na() %>% 
+    ggplot(aes(trait_1, trait_2, label=data, fill=data)) +
     geom_label() +
-    scale_fill_gradient(low="red", high="green") +
+    scale_fill_gradient(low="#cc2d17", high="#ffff3e") +
     theme(axis.text.x = element_text(angle=30, hjust = 1)) +
     labs(subtitle = "Percentage of data available for each trait combination")
 }
