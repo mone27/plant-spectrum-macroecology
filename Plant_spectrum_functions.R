@@ -1,3 +1,8 @@
+###### ----------
+# Plant spectrum functions
+# All code was done with ❤️ by two special Piisamirotte
+##### ---------------
+
 # source files
 library(readr)
 library(stringr)
